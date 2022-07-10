@@ -19,6 +19,7 @@ namespace JanSharp
     #endif
     {
         [Header("Configuration")]
+        [SerializeField] private Transform effectsParent;
         [SerializeField] private float maxDistance = 250f;
         // 0: Default, 4: Water, 8: Interactive, 11: Environment, 13: Pickup
         [SerializeField] private LayerMask rayLayerMask = (1 << 0) | (1 << 4) | (1 << 8) | (1 << 11) | (1 << 13);
@@ -36,7 +37,6 @@ namespace JanSharp
         [SerializeField] private GameObject buttonPrefab;
         public GameObject ButtonPrefab => buttonPrefab;
         [SerializeField] private float buttonHeight = 90f;
-        [SerializeField] private Transform effectsParent;
         [SerializeField] private BoxCollider uiCanvasCollider;
         [SerializeField] private RectTransform itemUIContainer;
         [SerializeField] private RectTransform screenUIContainer;
@@ -88,7 +88,13 @@ namespace JanSharp
         }
         bool IOnBuildCallback.OnBuild()
         {
-            if (gunMesh == null || placeModeButton == null || effectsParent == null || orderSync == null)
+            if (effectsParent == null)
+            {
+                Debug.LogError($"Please create a game object with {nameof(EffectDescriptor)}s as children"
+                    + $" and drag it to the 'Effects Parent' of the {nameof(VFXTargetGun)}.");
+                return false;
+            }
+            if (gunMesh == null || placeModeButton == null || orderSync == null)
             {
                 Debug.LogError("VFX Target gun requires all internal references to be set in the inspector.");
                 return false;
