@@ -12,7 +12,7 @@ using System.Linq;
 
 namespace JanSharp
 {
-    [UdonBehaviourSyncMode(BehaviourSyncMode.Manual)]
+    [UdonBehaviourSyncMode(BehaviourSyncMode.None)]
     public class VFXTargetGun : UdonSharpBehaviour
     #if UNITY_EDITOR && !COMPILER_UDONSHARP
         , IOnBuildCallback
@@ -255,11 +255,6 @@ namespace JanSharp
                     IsDeletePreviewActive = value.IsObject && deletePreviewToggle.isOn;
                 }
                 UpdateUseText();
-                if (!isReceiving)
-                {
-                    Networking.SetOwner(Networking.LocalPlayer, this.gameObject);
-                    RequestSerialization();
-                }
             }
         }
         private bool isHeld;
@@ -280,12 +275,9 @@ namespace JanSharp
                         helpWindow.SetParent(screenUIContainer, false);
                         uiCanvasCollider.enabled = false;
                     }
-                    if (!initialized && selectedEffectIndex != -1)
-                        Init();
                     UManager.Register(this);
                     if (SelectedEffect != null)
                         laser.gameObject.SetActive(true);
-                    BecomeOwner(); // preemptive transfer to spread ownership of objects out between players
                     Vector3 togglePos = placeDeleteModeToggle.transform.localPosition;
                     if (pickup.currentHand == VRC_Pickup.PickupHand.Left)
                     {
@@ -300,7 +292,6 @@ namespace JanSharp
                         togglePos.x = -Mathf.Abs(togglePos.x);
                     }
                     placeDeleteModeToggle.transform.localPosition = togglePos;
-                    AssignLocalPlayerToThisGunInternal();
                 }
                 else
                 {
@@ -318,18 +309,6 @@ namespace JanSharp
                     laser.gameObject.SetActive(false);
                 }
             }
-        }
-
-        public void AssignLocalPlayerToThisGun()
-        {
-            BecomeOwner();
-            AssignLocalPlayerToThisGunInternal();
-        }
-        private void AssignLocalPlayerToThisGunInternal()
-        {
-            lastHoldingPlayerDisplayName = Networking.LocalPlayer.displayName;
-            lastHeldTime = Time.time;
-            RequestSerialization();
         }
 
         private int deleteTargetIndex = -1;
@@ -501,8 +480,8 @@ namespace JanSharp
                 if (descriptor != null)
                     descriptor.Init();
             }
-            if (selectedEffectIndex != -1)
-                SelectedEffect = descriptors[selectedEffectIndex];
+            // if (selectedEffectIndex != -1)
+            //     SelectedEffect = descriptors[selectedEffectIndex];
             placeDeleteModeToggle.gameObject.SetActive(true);
             laserBaseScale = laser.localScale.z;
         }
@@ -586,18 +565,6 @@ namespace JanSharp
             if (Networking.LocalPlayer != null && !Networking.LocalPlayer.IsUserInVR() && !IsHeld)
                 uiCanvasCollider.enabled = active;
             uiToggle.gameObject.SetActive(!active);
-            if (active)
-                BecomeOwner();
-        }
-
-        private void BecomeOwner()
-        {
-            var localPlayer = Networking.LocalPlayer;
-            Networking.SetOwner(localPlayer, this.gameObject);
-            Networking.SetOwner(localPlayer, fullSync.gameObject);
-            if (initialized)
-                foreach (var descriptor in descriptors)
-                    Networking.SetOwner(localPlayer, descriptor.gameObject);
         }
 
         public void UseSelectedEffect()
@@ -869,33 +836,6 @@ namespace JanSharp
                 IsPlaceIndicatorActive = false;
                 IsDeleteIndicatorActive = false;
             }
-        }
-
-
-
-        public string LastHoldingPlayerDisplayName => lastHoldingPlayerDisplayName;
-        private float lastHeldTime = float.NaN;
-        public float LastHeldTime => lastHeldTime;
-        [UdonSynced] private string lastHoldingPlayerDisplayName;
-        [UdonSynced] private float lastHeldTimeOffset;
-        [UdonSynced] private int selectedEffectIndex = -1;
-        private bool isReceiving;
-
-        public override void OnPreSerialization()
-        {
-            selectedEffectIndex = SelectedEffect == null ? -1 : SelectedEffect.Index;
-            lastHeldTimeOffset = lastHeldTime - Time.time;
-        }
-
-        public override void OnDeserialization()
-        {
-            isReceiving = true;
-            if (!initialized && IsHeld) // someone else pressed a button while this client was holding it and didn't have the UI open before
-                Init();
-            if (initialized)
-                SelectedEffect = selectedEffectIndex == -1 ? null : descriptors[selectedEffectIndex];
-            lastHeldTime = lastHeldTimeOffset + Time.time;
-            isReceiving = false;
         }
     }
 }

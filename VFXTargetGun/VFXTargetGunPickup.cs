@@ -5,7 +5,7 @@ using VRC.Udon;
 
 namespace JanSharp
 {
-    [UdonBehaviourSyncMode(BehaviourSyncMode.Any)] // Any because it's on the same object as a VRC Object Sync, so can't just limit it to None
+    [UdonBehaviourSyncMode(BehaviourSyncMode.None)]
     public class VFXTargetGunPickup : UdonSharpBehaviour
     {
         public VFXTargetGun gun;
