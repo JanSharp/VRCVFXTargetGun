@@ -1,5 +1,5 @@
 {
-  "omnisharp.useGlobalMono": "always",
+  "omnisharp.useModernNet": false,
   "cSpell.words": [
     "Behaviour",
     "behaviours",

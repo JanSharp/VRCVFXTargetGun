@@ -17,16 +17,18 @@ TODO: tool to mass replace object syncs with item sync
 
 # Regex for adding, updating and removing debug messages in each method
 
+dlt = debug log tracker, because I needed something simple to remember.
+
 ```
 
 "parameters" (replace manually): MethodNameToBeExcluded, ClassName
 
-(( *)(private|public)\s+(override\s+)?\w+\s+(?!MethodNameToBeExcluded)(\w+)\([^\)]*\)(\s|\n)*\{)(\n\s*Debug\.Log\(\$"<vfx>.*)?
+(( *)(private|public)\s+(override\s+)?\w+\s+(?!MethodNameToBeExcluded)(\w+)\([^\)]*\)(\s|\n)*\{)(\n\s*Debug\.Log\(\$"<dlt>.*)?
 
 adding and updating:
 
 $1
-$2    Debug.Log($"<vfx> ClassName {this.name}  $5");
+$2    Debug.Log($"<dlt> ClassName {this.name}  $5");
 
 removing:
 
