@@ -1,4 +1,4 @@
-﻿using UdonSharp;
+using UdonSharp;
 using UnityEngine;
 using VRC.SDKBase;
 using VRC.Udon;
@@ -468,7 +468,7 @@ When this is true said second rotation is random."
                     }
             }
             PlayEffectInternal(index, position, rotation);
-            RequestSync(index);
+            RequestSyncForIndex(index);
         }
 
         public void StopAllEffects()
@@ -490,7 +490,7 @@ When this is true said second rotation is random."
         public void StopToggleEffect(int index)
         {
             StopToggleEffectInternal(index);
-            RequestSync(index);
+            RequestSyncForIndex(index);
         }
 
         private void StopToggleEffectInternal(int index)
@@ -603,17 +603,28 @@ When this is true said second rotation is random."
             delayedRotations = new Quaternion[4];
         }
 
-        private void RequestSync(int index)
+        private void RequestSyncForIndex(int index)
         {
             if (requestedSyncs[index])
                 return;
+            Debug.Log($"<dlt> Requesting sync for index {index}.");
             requestedSyncs[index] = true;
             requestedIndexes[requestedCount++] = index;
-            EffectOrder[index] = ++orderSync.currentTopOrder;
+            RequestSync();
+        }
+        private bool requestedSync;
+        private void RequestSync()
+        {
             var localPlayer = Networking.LocalPlayer;
             Networking.SetOwner(localPlayer, orderSync.gameObject);
             Networking.SetOwner(localPlayer, this.gameObject);
             RequestSerialization();
+            requestedSync = true;
+        }
+
+        public override void OnOwnershipTransferred(VRCPlayerApi player)
+        {
+            Debug.Log($"<dlt> Transferred owner to {player.displayName}");
         }
 
         public ulong CombineSyncedData(byte gunEffectIndex, int effectIndex, float time, bool active, uint order)
@@ -627,6 +638,7 @@ When this is true said second rotation is random."
 
         public override void OnPreSerialization()
         {
+            requestedSync = false;
             // nothing to sync
             if (!effectInitialized || requestedCount == 0)
             {
@@ -654,15 +666,18 @@ When this is true said second rotation is random."
                 syncedRotations = new Quaternion[requestedCount];
             }
             var time = Time.time;
+            var order = ++orderSync.currentTopOrder;
             for (int i = 0; i < requestedCount; i++)
             {
+                Debug.Log($"<dlt> Syncing order {order}, index {requestedIndexes[i]}.");
                 var effectIndex = requestedIndexes[i];
+                EffectOrder[effectIndex] = order;
                 var effectTransform = EffectParents[effectIndex];
                 byte one = 0;
                 var two = effectIndex;
                 var three = HasParticleSystems ? ParticleSystems[effectIndex][0].time : 0f;
                 var four = ActiveEffects[effectIndex];
-                var five = EffectOrder[effectIndex];
+                var five = order;
                 syncedData[i] = CombineSyncedData(one, two, three, four, five);
                 syncedPositions[i] = effectTransform.position;
                 syncedRotations[i] = effectTransform.rotation;
@@ -673,6 +688,11 @@ When this is true said second rotation is random."
 
         public override void OnDeserialization()
         {
+            if (requestedSync)
+            {
+                Debug.Log("<dlt> Requested sync but received data instead.");
+                SendCustomEventDelayedFrames(nameof(RequestSync), 1);
+            }
             int syncedCount;
             if (syncedPositions == null || (syncedCount = syncedData.Length) == 0) // should never be 0 but I don't want to think about it right now
                 return;
@@ -687,8 +707,12 @@ When this is true said second rotation is random."
             int effectIndex = (int)((data & EffectIndexBits) >> EffectIndexBitShift);
             uint order = (uint)(data & OrderBits);
             EnsureIsInRange(effectIndex);
+            Debug.Log($"<dlt> Receiving order {order}, index {effectIndex}.");
             if (EffectOrder[effectIndex] >= order)
+            {
+                Debug.Log($"<dlt> Aborting because of higher or equal current order {EffectOrder[effectIndex]}.");
                 return;
+            }
             EffectOrder[effectIndex] = order;
             if (order > orderSync.currentTopOrder)
             {
