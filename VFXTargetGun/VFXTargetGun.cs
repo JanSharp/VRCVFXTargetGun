@@ -715,6 +715,11 @@ namespace JanSharp
                 // misc
                 if (Input.GetKeyDown(KeyCode.E))
                     ToggleUI();
+                if (Input.GetKeyDown(KeyCode.U))
+                {
+                    UseSelectedEffect();
+                    return;
+                }
 
                 // mode selection
                 if (Input.GetKeyDown(KeyCode.F))
