@@ -40,15 +40,7 @@
 - option for random rotation or fixed effect rotation (forward being aligned with the hit normal, up facing away from the gun as well as possible)
 - disable the Hide UI toggle to prevent any of the proximity issues in VR
 - disable ui box collider when it is hidden to remove the cursor while it's hidden
-
-## Todo
-
 - preview selected effect at current target location
-
-## Maybe
-
-- toggle the UI off when someone else picks up the gun. still possible to be toggled on again afterwards while the other person is holding it
-- positioning, most notably up and down to be able to place thins on uneven ground without parts of it floating
 
 ## Future Todo
 
@@ -61,6 +53,7 @@
 - stop absolutely everything button
 - some sort of rotation control like locking rotation, locking rotation on some around some axis, snapping
 - grid snapping
+- positioning, most notably up and down to be able to place things on uneven ground without parts of it floating
 
 ## Version 2
 
@@ -102,24 +95,40 @@ pretty much a must for v2:
 - [x] outline for selected effect
 - [ ] figure out exact gun grips and fix the vertical position of the gun in desktop and perfectly fix the position in VR such that the gun is always exactly in your hand and you get instant feedback when moving it. So actually this doesn't work for desktop at all unless I find a way to get the player camera position, so if I do this at all it would only be for VR.
 
-after that:
+# Version 0.3.0
+
+preview mode
+
+# Version 0.4.0
 
 <!-- cSpell:ignore Factorio -->
 
-- refactor effects for combined pooling and performance
-- Q picking like Factorio (requires effect refactor)
-- preview
-- edit mode
+alright, so, a list for 0.4.0, the quality of life update:
 
+- [x] only have a single effect descriptor for each effect, not per gun
+- [x] only have one single local only gun
+- [ ] better help window with tabs
+  - [ ] a general info tab
+  - [ ] a shortcuts tab
+  - [ ] a changelog tab
+  - [ ] an about tab
+- [ ] fix "recalling"
+- [ ] clean up visibility toggle
+- [ ] clean up gun assignment
+- [ ] delete any effect (with a collider) in delete mode, not just selected effects (maybe there is something smart to be done about loop effects so we don't have to iterate all active ones)
+- [ ] Q picking like Factorio
+- [ ] support colliders for non obj effects
+- [ ] support mesh renderers for non obj effects to have a "preview" (?)
+- [ ] add option for effect descriptors for what type of obj they are
+  - [ ] dropdown with default "auto"
+  - [ ] warn about potential oversights like only some particles being looped and some aren't
 
+maybe:
 
-# Version 0.2.4
+- [ ] show inlay hints for key binds when the UI is open for desktop users
 
-preview mode
-unify effects into one pool instead of per gun (test network racing somehow)
-toggle between just modifying stuff placed by this gun or literally everything
-deleting any effect in delete mode, not just the selected one. Nice point and click (maybe there is something smart to be done about loop effects so we don't have to iterate all active ones)
+I decided against toggling between just modifying stuff placed by the local player or literally everything because it would require syncing a 32 bit integer for every effect just for that which I consider to be a big waste. It's possible but for now I'll just leave it out.
 
-# Version 0.3.0
+# Version 0.5.0
 
 edit mode
