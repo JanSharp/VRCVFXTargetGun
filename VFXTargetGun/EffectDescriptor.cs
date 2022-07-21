@@ -453,7 +453,7 @@ When this is true said second rotation is random."
 
         public int PlayEffect(Vector3 position, Quaternion rotation, bool ignoreRandomization)
         {
-            Debug.Log($"<dlt> PlayEffect");
+            Debug.Log($"<dlt> PlayEffect {(ignoreRandomization ? "(collision)" : "(manual)")}");
             if (randomizeRotation && !ignoreRandomization)
             {
                 rotation = rotation * nextRandomRotation;
@@ -639,7 +639,7 @@ When this is true said second rotation is random."
             requestedIndexes[requestedCount++] = index;
         }
         private bool requestedSync;
-        private void RequestSync()
+        public void RequestSync()
         {
             var localPlayer = Networking.LocalPlayer;
             Networking.SetOwner(localPlayer, orderSync.gameObject);
