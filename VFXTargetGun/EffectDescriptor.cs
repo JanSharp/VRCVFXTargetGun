@@ -1,4 +1,4 @@
-using UdonSharp;
+﻿using UdonSharp;
 using UnityEngine;
 using VRC.SDKBase;
 using VRC.Udon;
@@ -98,6 +98,9 @@ When this is true said second rotation is random."
         public Transform[] EffectParents { get; private set; }
         public ParticleSystem[][] ParticleSystems { get; private set; }
         public bool[] ActiveEffects { get; private set; }
+        private byte[] lastPerformedActions;
+        private const byte JustGotCreatedFlag = 0b01;
+        private const byte ResolvingCollisionFlag = 0b10;
         private bool[] fadingOut;
         public int MaxCount { get; private set; }
         private int fadingOutCount;
@@ -317,6 +320,7 @@ When this is true said second rotation is random."
             if (HasParticleSystems)
                 ParticleSystems = new ParticleSystem[4][];
             ActiveEffects = new bool[4];
+            lastPerformedActions = new byte[4];
             if (IsLoop)
                 fadingOut = new bool[4];
             toFinishIndexes = new int[4];
@@ -364,6 +368,9 @@ When this is true said second rotation is random."
             var newActiveEffects = new bool[newLength];
             ActiveEffects.CopyTo(newActiveEffects, 0);
             ActiveEffects = newActiveEffects;
+            var newLastPerformedActions = new byte[newLength];
+            lastPerformedActions.CopyTo(newLastPerformedActions, 0);
+            lastPerformedActions = newLastPerformedActions;
             if (IsLoop)
             {
                 var newFadingOut = new bool[newLength];
@@ -444,8 +451,9 @@ When this is true said second rotation is random."
             return result;
         }
 
-        public void PlayEffect(Vector3 position, Quaternion rotation)
+        public int PlayEffect(Vector3 position, Quaternion rotation)
         {
+            Debug.Log($"<dlt> PlayEffect");
             if (randomizeRotation)
             {
                 rotation = rotation * nextRandomRotation;
@@ -469,6 +477,7 @@ When this is true said second rotation is random."
             }
             PlayEffectInternal(index, position, rotation);
             RequestSyncForIndex(index);
+            return index;
         }
 
         public void StopAllEffects()
@@ -495,6 +504,7 @@ When this is true said second rotation is random."
 
         private void StopToggleEffectInternal(int index)
         {
+            lastPerformedActions[index] = DeleteActionType;
             if (!ActiveEffects[index])
                 return;
             ActiveEffects[index] = false;
@@ -515,6 +525,7 @@ When this is true said second rotation is random."
         private void PlayEffectInternal(int index, Vector3 position, Quaternion rotation)
         {
             var effectTransform = GetEffectAtIndex(index);
+            lastPerformedActions[index] = PlaceActionType;
             if (ActiveEffects[index])
                 return;
             ActiveCount++;
@@ -578,16 +589,16 @@ When this is true said second rotation is random."
         private const ulong GunEffectIndexBits = 0xff00000000000000UL;
         private const ulong    EffectIndexBits = 0x00ffff0000000000UL;
         private const ulong           TimeBits = 0x000000ffff000000UL;
-        private const ulong          ActiveBit = 0x0000000000800000UL;
-        private const ulong          OrderBits = 0x00000000007fffffUL;
+        private const ulong     ActionTypeBits = 0x0000000000c00000UL;
+        private const ulong          OrderBits = 0x00000000003fffffUL;
         private const int GunEffectIndexBitShift = 8 * 7;
         private const int EffectIndexBitShift = 8 * 5;
         private const int TimeBitShift = 8 * 3;
+        private const int ActionTypeBitShift = 8 * 3 - 2;
         private const float TimePointShift = 256f; // like a shift of 8 bits
-        private const float MaxLoopDelay = 0.15f;
+        private const float MaxLoopDelay = 0.1f;
         private const float MaxDelay = 0.5f;
         private const float StaleEffectTime = 15f;
-        private int[] delayedIndexes;
         private Vector3[] delayedPositions;
         private Quaternion[] delayedRotations;
         private int delayedCount;
@@ -598,10 +609,21 @@ When this is true said second rotation is random."
             if (incrementalSyncingInitialized)
                 return;
             incrementalSyncingInitialized = true;
-            delayedIndexes = new int[4];
             delayedPositions = new Vector3[4];
             delayedRotations = new Quaternion[4];
         }
+
+        // action type is 2 bits big, so 4 values
+        private const byte DeleteActionType = 0b00;
+        private const byte PlaceActionType = 0b01;
+        public byte GetPlaceActionType() => PlaceActionType;
+        private const byte EditActionType = 0b10;
+        /// <summary>
+        /// Special action type used in network race conditions.
+        /// Behaves like an edit action, except when the effect at the given index isn't active
+        /// said effect gets created instead of the action getting ignored.
+        /// </summary>
+        private const byte PlaceOrEditActionType = PlaceActionType | EditActionType;
 
         private void RequestSyncForIndex(int index)
         {
@@ -627,12 +649,12 @@ When this is true said second rotation is random."
             Debug.Log($"<dlt> Transferred owner to {player.displayName}");
         }
 
-        public ulong CombineSyncedData(byte gunEffectIndex, int effectIndex, float time, bool active, uint order)
+        public ulong CombineSyncedData(byte gunEffectIndex, int effectIndex, float time, byte actionType, uint order)
         {
             return ((((ulong)gunEffectIndex) << GunEffectIndexBitShift) & GunEffectIndexBits) // gun effect index
                 | ((((ulong)effectIndex) << EffectIndexBitShift) & EffectIndexBits) // effect index
                 | (HasParticleSystems ? ((((ulong)(time * TimePointShift)) << TimeBitShift) & TimeBits) : 0UL) // time
-                | (IsToggle && active ? ActiveBit : 0UL) // active
+                | ((((ulong)actionType) << ActionTypeBitShift) & ActionTypeBits) // action type
                 | (((ulong)order) & OrderBits); // order
         }
 
@@ -669,16 +691,13 @@ When this is true said second rotation is random."
             var order = ++orderSync.currentTopOrder;
             for (int i = 0; i < requestedCount; i++)
             {
-                Debug.Log($"<dlt> Syncing order {order}, index {requestedIndexes[i]}.");
                 var effectIndex = requestedIndexes[i];
                 EffectOrder[effectIndex] = order;
                 var effectTransform = EffectParents[effectIndex];
-                byte one = 0;
-                var two = effectIndex;
-                var three = HasParticleSystems ? ParticleSystems[effectIndex][0].time : 0f;
-                var four = ActiveEffects[effectIndex];
-                var five = order;
-                syncedData[i] = CombineSyncedData(one, two, three, four, five);
+                var effectTime = HasParticleSystems ? ParticleSystems[effectIndex][0].time : 0f;
+                var actionType = lastPerformedActions[effectIndex];
+                Debug.Log($"<dlt> Syncing order {order}, index {requestedIndexes[i]}, action type {actionType}.");
+                syncedData[i] = CombineSyncedData(0, effectIndex, effectTime, actionType, order);
                 syncedPositions[i] = effectTransform.position;
                 syncedRotations[i] = effectTransform.rotation;
                 requestedSyncs[effectIndex] = false;
@@ -688,30 +707,48 @@ When this is true said second rotation is random."
 
         public override void OnDeserialization()
         {
+            Debug.Log("<dlt> OnDeserialization");
             if (requestedSync)
             {
-                Debug.Log("<dlt> Requested sync but received data instead.");
-                SendCustomEventDelayedFrames(nameof(RequestSync), 1);
+                // Debug.Log("<dlt> Requested sync but received data instead.");
+                RequestSync();
             }
             int syncedCount;
             if (syncedPositions == null || (syncedCount = syncedData.Length) == 0) // should never be 0 but I don't want to think about it right now
                 return;
             for (int i = 0; i < syncedCount; i++)
-                ProcessReceivedData(syncedData[i], syncedPositions[i], syncedRotations[i]);
+                ProcessReceivedData(syncedData[i], syncedPositions[i], syncedRotations[i], false);
+
+            for (int i = 0; i < delayedCount; i++)
+            {
+                int effectIndex = PlayEffect(delayedPositions[i], delayedRotations[i]);
+                lastPerformedActions[effectIndex] = PlaceOrEditActionType;
+            }
+            delayedCount = 0;
         }
 
-        public void ProcessReceivedData(ulong data, Vector3 position, Quaternion rotation)
+        public void ProcessReceivedData(ulong data, Vector3 position, Quaternion rotation, bool cameFromFullSync)
         {
             InitEffect();
             InitIncrementalSyncing();
             int effectIndex = (int)((data & EffectIndexBits) >> EffectIndexBitShift);
             uint order = (uint)(data & OrderBits);
             EnsureIsInRange(effectIndex);
-            Debug.Log($"<dlt> Receiving order {order}, index {effectIndex}.");
+            byte actionType = (byte)((data & ActionTypeBits) >> ActionTypeBitShift);
+            Debug.Log($"<dlt> Receiving order {order}, index {effectIndex}, action type {actionType}.");
+            bool orderCollision = false;
             if (EffectOrder[effectIndex] >= order)
             {
-                Debug.Log($"<dlt> Aborting because of higher or equal current order {EffectOrder[effectIndex]}.");
-                return;
+                if (cameFromFullSync)
+                {
+                    Debug.Log($"<dlt> Aborting because of higher or equal current order {EffectOrder[effectIndex]}.");
+                    return;
+                }
+                else
+                {
+                    // used to determine if an edit action was a collision
+                    orderCollision = true;
+                }
             }
             EffectOrder[effectIndex] = order;
             if (order > orderSync.currentTopOrder)
@@ -720,68 +757,75 @@ When this is true said second rotation is random."
                 // of the orderSync object who has the same or a higher currentTopOrder
                 orderSync.currentTopOrder = order;
             }
-            bool active = IsToggle ? ((data & ActiveBit) != 0UL) : true;
-            float rawSyncedTime = ((float)((data & TimeBits) >> TimeBitShift)) / TimePointShift;
-            float delay = Mathf.Min(rawSyncedTime, MaxDelay);
-            float time = delay - rawSyncedTime;
-            if (!HasParticleSystems || !active || time <= 0f)
+
+            if (actionType == DeleteActionType)
             {
-                if (IsToggle)
+                // no collision resolution for delete actions, delete actions just always win
+                StopToggleEffectInternal(effectIndex);
+                return;
+            }
+
+            if ((actionType & PlaceActionType) != 0)
+            {
+                if (ActiveEffects[effectIndex])
                 {
-                    if (active)
+                    // only consider `PlaceActionType` actions to be collisions, not `PlaceOrEditActionType`
+                    // because `PlaceOrEditActionType` only get created by a player that wasn't the local player
+                    // placing an effect, which means if we consider it to be a collision and create another effect here
+                    // then it would result in potentially infinite loops of creating more effects at the same location
+                    if (actionType == PlaceActionType)
+                    {
+                        Debug.Log($"<dlt> !! ^ Place Collision ^ !!");
+                        if (delayedCount == delayedPositions.Length)
+                            GrowDelayedArrays();
+                        delayedPositions[delayedCount] = position;
+                        delayedRotations[delayedCount++] = rotation;
+                        lastPerformedActions[effectIndex] = EditActionType;
+                        RequestSyncForIndex(effectIndex);
+                        return;
+                    }
+                }
+                else
+                {
+                    float effectTime = ((float)((data & TimeBits) >> TimeBitShift)) / TimePointShift;
+                    // prevent old once effects from playing, specifically for late joiners
+                    if (!IsOnce || effectTime < effectDuration + StaleEffectTime)
                     {
                         PlayEffectInternal(effectIndex, position, rotation);
                         if (IsLoop)
                         {
-                            time = Mathf.Max(0f, rawSyncedTime - MaxLoopDelay);
-                            foreach (var ps in ParticleSystems[0])
-                                ps.time = time;
+                            float time = Mathf.Max(0f, effectTime - MaxLoopDelay);
+                            if (time > 0f)
+                                foreach (var ps in ParticleSystems[effectIndex])
+                                    ps.time = time;
                         }
                     }
-                    else
-                        StopToggleEffectInternal(effectIndex);
-                }
-                else // IsOnce
-                {
-                    if (effectDuration + StaleEffectTime + time > 0f) // prevent old effects from playing, specifically for late joiners
-                        PlayEffectInternal(effectIndex, position, rotation);
+                    return;
                 }
             }
-            else // only for effects with particle systems when they get activated
+            // the only time the block above doesn't early return is for `PlaceOrEditActionType` actions where the effect already existed
+            // (in which case it needs to be edited, not created, which is why it is continuing to down below)
+
+            if ((actionType & EditActionType) != 0 && ActiveEffects[effectIndex])
             {
-                if (delayedCount == delayedPositions.Length)
-                    GrowDelayedArrays();
-                delayedIndexes[delayedCount] = effectIndex;
-                delayedPositions[delayedCount] = position;
-                delayedRotations[delayedCount++] = rotation;
-                SendCustomEventDelayedSeconds(nameof(PlayEffectDelayed), delay);
+                if (orderCollision)
+                {
+                    Debug.Log($"<dlt> !! ^ Edit Collision ^ !!");
+                    // TODO: handle edit collisions, including for `PlaceOrEditActionType` actions
+                }
+                EffectParents[effectIndex].SetPositionAndRotation(position, rotation);
             }
         }
 
         private void GrowDelayedArrays()
         {
-            int newLength = delayedIndexes.Length * 2;
-            var newDelayedIndexes = new int[newLength];
-            delayedIndexes.CopyTo(newDelayedIndexes, 0);
-            delayedIndexes = newDelayedIndexes;
+            int newLength = delayedPositions.Length * 2;
             var newDelayedPositions = new Vector3[newLength];
             delayedPositions.CopyTo(newDelayedPositions, 0);
             delayedPositions = newDelayedPositions;
             var newDelayedRotations = new Quaternion[newLength];
             delayedRotations.CopyTo(newDelayedRotations, 0);
             delayedRotations = newDelayedRotations;
-        }
-
-        public void PlayEffectDelayed()
-        {
-            PlayEffectInternal(delayedIndexes[0], delayedPositions[0], delayedRotations[0]);
-            for (int i = 1; i < delayedCount; i++)
-            {
-                delayedIndexes[i - 1] = delayedIndexes[i];
-                delayedPositions[i - 1] = delayedPositions[i];
-                delayedRotations[i - 1] = delayedRotations[i];
-            }
-            delayedCount--;
         }
     }
 }

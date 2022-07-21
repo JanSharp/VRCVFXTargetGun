@@ -52,7 +52,7 @@ namespace JanSharp
                             (byte)descriptorIndex,
                             i,
                             descriptor.HasParticleSystems ? descriptor.ParticleSystems[i][0].time : 0f,
-                            descriptor.ActiveEffects[i],
+                            descriptor.GetPlaceActionType(),
                             descriptor.EffectOrder[i]
                         );
                         syncedPositions[syncedI] = descriptor.EffectParents[i].position;
@@ -72,7 +72,7 @@ namespace JanSharp
             {
                 var data = syncedData[i];
                 int effectIndex = (int)((data & 0xff00000000000000UL) >> (8 * 7));
-                gun.descriptors[effectIndex].ProcessReceivedData(data, syncedPositions[i], syncedRotations[i]);
+                gun.descriptors[effectIndex].ProcessReceivedData(data, syncedPositions[i], syncedRotations[i], true);
             }
         }
     }
