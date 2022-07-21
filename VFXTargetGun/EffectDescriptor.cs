@@ -451,10 +451,10 @@ When this is true said second rotation is random."
             return result;
         }
 
-        public int PlayEffect(Vector3 position, Quaternion rotation)
+        public int PlayEffect(Vector3 position, Quaternion rotation, bool ignoreRandomization)
         {
             Debug.Log($"<dlt> PlayEffect");
-            if (randomizeRotation)
+            if (randomizeRotation && !ignoreRandomization)
             {
                 rotation = rotation * nextRandomRotation;
                 nextRandomRotation = Quaternion.AngleAxis(Random.Range(0f, 360f), Vector3.forward);
@@ -726,7 +726,7 @@ When this is true said second rotation is random."
 
             for (int i = 0; i < delayedCount; i++)
             {
-                int effectIndex = PlayEffect(delayedPositions[i], delayedRotations[i]);
+                int effectIndex = PlayEffect(delayedPositions[i], delayedRotations[i], true);
                 lastPerformedActions[effectIndex] = PlaceOrEditActionType;
             }
             delayedCount = 0;

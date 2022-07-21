@@ -575,7 +575,7 @@ namespace JanSharp
             {
                 if (IsPlaceIndicatorActive)
                 {
-                    SelectedEffect.PlayEffect(placeIndicator.position, placeIndicator.rotation);
+                    SelectedEffect.PlayEffect(placeIndicator.position, placeIndicator.rotation, false);
                     IsPlaceIndicatorActive = false;
                 }
             }
