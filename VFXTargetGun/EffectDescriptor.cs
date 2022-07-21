@@ -627,12 +627,16 @@ When this is true said second rotation is random."
 
         private void RequestSyncForIndex(int index)
         {
+            MarkIndexForSync(index);
+            RequestSync();
+        }
+        private void MarkIndexForSync(int index)
+        {
             if (requestedSyncs[index])
                 return;
             Debug.Log($"<dlt> Requesting sync for index {index}.");
             requestedSyncs[index] = true;
             requestedIndexes[requestedCount++] = index;
-            RequestSync();
         }
         private bool requestedSync;
         private void RequestSync()
@@ -705,6 +709,7 @@ When this is true said second rotation is random."
             requestedCount = 0;
         }
 
+        private bool hasEditCollision = false;
         public override void OnDeserialization()
         {
             Debug.Log("<dlt> OnDeserialization");
@@ -725,6 +730,11 @@ When this is true said second rotation is random."
                 lastPerformedActions[effectIndex] = PlaceOrEditActionType;
             }
             delayedCount = 0;
+            if (hasEditCollision)
+            {
+                SendCustomEventDelayedSeconds(nameof(RequestSync), Random.Range(0.25f, 1.5f));
+                hasEditCollision = false;
+            }
         }
 
         public void ProcessReceivedData(ulong data, Vector3 position, Quaternion rotation, bool cameFromFullSync)
@@ -808,10 +818,14 @@ When this is true said second rotation is random."
 
             if ((actionType & EditActionType) != 0 && ActiveEffects[effectIndex])
             {
+                lastPerformedActions[effectIndex] = EditActionType;
                 if (orderCollision)
                 {
+                    // handle edit collisions, including for `PlaceOrEditActionType` actions by simply marking this effect for sync again
+                    // but requesting sync in a random point in time in the future (handled in OnDeserialization)
                     Debug.Log($"<dlt> !! ^ Edit Collision ^ !!");
-                    // TODO: handle edit collisions, including for `PlaceOrEditActionType` actions
+                    MarkIndexForSync(effectIndex);
+                    hasEditCollision = true;
                 }
                 EffectParents[effectIndex].SetPositionAndRotation(position, rotation);
             }
