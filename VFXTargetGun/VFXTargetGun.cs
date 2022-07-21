@@ -815,7 +815,12 @@ namespace JanSharp
                     else if (IsDeleteIndicatorActive && IsDeletePreviewActive && hit.transform != null && selectedDeletePreview != null
                         && hit.transform.IsChildOf(selectedDeletePreview))
                     {
-                        // do nothing :)
+                        if (!SelectedEffect.ActiveEffects[DeleteTargetIndex])
+                        {
+                            IsDeleteIndicatorActive = false;
+                            return;
+                        }
+                        // do nothing otherwise :)
                         effectParent = SelectedEffect.EffectParents[DeleteTargetIndex];
                     }
                     else
