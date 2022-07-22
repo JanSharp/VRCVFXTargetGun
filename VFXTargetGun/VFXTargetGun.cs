@@ -63,13 +63,12 @@ namespace JanSharp
         [SerializeField] private TextMeshPro selectedEffectNameTextLeftHand;
         [SerializeField] private TextMeshPro selectedEffectNameTextRightHand;
         [SerializeField] private TextMeshProUGUI legendText;
-        [SerializeField] private Button placeModeButton;
-        [SerializeField] private Button deleteModeButton;
-        [SerializeField] private Button editModeButton;
+        [SerializeField] private Toggle placeModeToggle;
+        [SerializeField] private Toggle deleteModeToggle;
+        [SerializeField] private Toggle editModeToggle;
         [SerializeField] private Toggle placePreviewToggle;
         [SerializeField] private Toggle deletePreviewToggle;
         [SerializeField] private Toggle editPreviewToggle;
-        [SerializeField] private Sprite selectedSprite;
         [SerializeField] private EffectOrderSync orderSync;
         public EffectOrderSync OrderSync => orderSync;
         [SerializeField] private VFXTargetGunEffectsFullSync fullSync;
@@ -78,7 +77,6 @@ namespace JanSharp
 
         // set OnBuild
         [SerializeField] [HideInInspector] private MeshRenderer[] gunMeshRenderers;
-        [SerializeField] [HideInInspector] private Sprite normalSprite;
         [SerializeField] [HideInInspector] public EffectDescriptor[] descriptors;
 
         #if UNITY_EDITOR && !COMPILER_UDONSHARP
@@ -95,13 +93,12 @@ namespace JanSharp
                     + $" and drag it to the 'Effects Parent' of the {nameof(VFXTargetGun)}.");
                 return false;
             }
-            if (gunMesh == null || placeModeButton == null || orderSync == null)
+            if (gunMesh == null || orderSync == null)
             {
                 Debug.LogError("VFX Target gun requires all internal references to be set in the inspector.");
                 return false;
             }
             gunMeshRenderers = gunMesh.GetComponentsInChildren<MeshRenderer>();
-            normalSprite = placeModeButton.image.sprite;
             descriptors = new EffectDescriptor[effectsParent.childCount];
             bool result = true;
             for (int i = 0; i < effectsParent.childCount; i++)
@@ -136,9 +133,7 @@ namespace JanSharp
                     return;
                 IsPlaceIndicatorActive = false;
                 IsDeleteIndicatorActive = false;
-                SetModeButtonTextUnderline(mode, false);
                 mode = value;
-                SetModeButtonTextUnderline(mode, true);
                 var color = GetModeColor(mode);
                 foreach (var renderer in gunMeshRenderers)
                     foreach (var mat in renderer.materials)
@@ -157,46 +152,38 @@ namespace JanSharp
             if (!keepOpenToggle.isOn)
                 SetUIActive(false);
         }
-        public void SwitchToPlaceMode() => SwitchToMode(PlaceMode);
-        public void SwitchToDeleteMode() => SwitchToMode(DeleteMode);
-        public void SwitchToEditMode() => SwitchToMode(EditMode);
+        public void UpdateModeBasedOnToggles()
+        {
+            if (placeModeToggle.isOn)
+            {
+                SwitchToMode(PlaceMode);
+                return;
+            }
+            if (deleteModeToggle.isOn)
+            {
+                SwitchToMode(DeleteMode);
+                return;
+            }
+            if (editModeToggle.isOn)
+            {
+                SwitchToMode(EditMode);
+                return;
+            }
+        }
         public void SwitchToPlaceModeKeepingUIOpen() => Mode = PlaceMode;
         public void SwitchToDeleteModeKeepingUIOpen() => Mode = DeleteMode;
         public void SwitchToEditModeKeepingUIOpen() => Mode = EditMode;
-
-        /// <summary>
-        /// Simply does nothing if the given mode is UnknownMode.
-        /// </summary>
-        private void SetModeButtonTextUnderline(int mode, bool isSelected)
-        {
-            switch (mode)
-            {
-                case PlaceMode:
-                    SetModeButtonTextUnderlineInternal(placeModeButton, isSelected);
-                    break;
-                case DeleteMode:
-                    SetModeButtonTextUnderlineInternal(deleteModeButton, isSelected);
-                    break;
-                case EditMode:
-                    SetModeButtonTextUnderlineInternal(editModeButton, isSelected);
-                    break;
-            }
-        }
-        private void SetModeButtonTextUnderlineInternal(Button button, bool isSelected)
-        {
-            button.image.sprite = isSelected ? selectedSprite : normalSprite;
-        }
 
         private Color GetModeColor(int mode)
         {
             switch (mode)
             {
                 case PlaceMode:
-                    return placeModeButton.colors.normalColor;
+                    return placeModeToggle.colors.normalColor;
                 case DeleteMode:
-                    return deleteModeButton.colors.normalColor;
+                    return deleteModeToggle.colors.normalColor;
                 case EditMode:
-                    return editModeButton.colors.normalColor;
+                    return editModeToggle.colors.normalColor;
                 default:
                     return Color.white;
             }
