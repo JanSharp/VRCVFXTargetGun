@@ -122,7 +122,7 @@ alright, so, a list for 0.4.0, the quality of life update:
 - [ ] add option for effect descriptors for what type of obj they are
   - [ ] dropdown with default "auto"
   - [ ] warn about potential oversights like only some particles being looped and some aren't
-- [ ] change delete everything description
+- [x] change delete everything description
 - [ ] change everything to toggles with toggle groups
 - [ ] remove button prefab, put the original button in the grid already and disable it
 
