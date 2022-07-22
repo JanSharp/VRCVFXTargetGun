@@ -23,6 +23,7 @@ namespace JanSharp
         [SerializeField] private float maxDistance = 250f;
         // 0: Default, 4: Water, 8: Interactive, 11: Environment, 13: Pickup
         [SerializeField] private LayerMask rayLayerMask = (1 << 0) | (1 << 4) | (1 << 8) | (1 << 11) | (1 << 13);
+        [SerializeField] private bool initialVisibility = false;
         private Color deselectedColor;
         [SerializeField] private Color inactiveColor = new Color(0.73725f, 0.42353f, 0.85098f);
         [SerializeField] private Color activeColor = new Color(0.89412f, 0.60000f, 1.00000f);
@@ -441,6 +442,15 @@ namespace JanSharp
                 // then has all the actual children as its children
                 pickup.transform.GetChild(0).gameObject.SetActive(value);
             }
+        }
+
+        public void ToggleVisibility() => IsVisible = !IsVisible;
+        public void SetInvisible() => IsVisible = false;
+        public void SetVisible() => IsVisible = true;
+
+        private void Start()
+        {
+            IsVisible = initialVisibility;
         }
 
         private bool holdingTab;
