@@ -448,6 +448,12 @@ namespace JanSharp
         public void SetInvisible() => IsVisible = false;
         public void SetVisible() => IsVisible = true;
 
+        public void Recall()
+        {
+            var data = Networking.LocalPlayer.GetTrackingData(VRCPlayerApi.TrackingDataType.RightHand);
+            pickup.transform.position = data.position;
+        }
+
         private void Start()
         {
             IsVisible = initialVisibility;

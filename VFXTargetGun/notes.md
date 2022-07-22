@@ -112,9 +112,9 @@ alright, so, a list for 0.4.0, the quality of life update:
   - [ ] a shortcuts tab
   - [ ] a changelog tab
   - [ ] an about tab
-- [ ] fix "recalling"
+- [x] fix "recalling"
 - [x] clean up visibility toggle
-- [ ] clean up gun assignment
+- [x] clean up gun assignment
 - [ ] delete any effect (with a collider) in delete mode, not just selected effects (maybe there is something smart to be done about loop effects so we don't have to iterate all active ones)
 - [ ] Q picking like Factorio
 - [ ] support colliders for non obj effects
