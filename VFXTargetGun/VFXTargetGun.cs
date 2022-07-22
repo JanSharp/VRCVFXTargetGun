@@ -696,6 +696,44 @@ namespace JanSharp
             }
         }
 
+        // since we can't use out parameters
+        private EffectDescriptor outTargetedEffect;
+        private int outTargetedEffectIndex;
+        private bool TryGetTargetedEffect(RaycastHit hit)
+        {
+            // NOTE: this whole logic is very most likely a big performance concern, mostly because of GetNearestActiveEffect
+            if (!SelectedEffect.IsToggle || SelectedEffect.ActiveCount == 0)
+                return false;
+            Transform effectClonesParent = SelectedEffect.effectClonesParent;
+            // the `hit.transform` can be null when pointing at VRChat's internal things such as the VRChat menu
+            // or VRChat players. I'm assuming it is an udon specific thing where they null out any transform/component you're
+            // trying to get if it is one of their internal ones
+            if (hit.transform != null && hit.transform.IsChildOf(effectClonesParent))
+            {
+                Transform effectParent = hit.transform;
+                while (true)
+                {
+                    var parent = effectParent.parent;
+                    if (parent == effectClonesParent)
+                        break;
+                    effectParent = parent;
+                }
+                outTargetedEffectIndex = effectParent.GetSiblingIndex();
+            }
+            else if (IsDeleteMode && IsDeleteIndicatorActive && IsDeletePreviewActive
+                && hit.transform != null && selectedDeletePreview != null && hit.transform.IsChildOf(selectedDeletePreview))
+            {
+                if (!SelectedEffect.ActiveEffects[DeleteTargetIndex]) // the effect was deleted while the local player was previewing it
+                    return false;
+                outTargetedEffectIndex = DeleteTargetIndex;
+            }
+            else
+            {
+                outTargetedEffectIndex = SelectedEffect.GetNearestActiveEffect(hit.point);
+            }
+            return true;
+        }
+
         public void CustomUpdate()
         {
             if (holdingTab)
@@ -792,45 +830,13 @@ namespace JanSharp
                 }
                 else if (IsDeleteMode)
                 {
-                    // NOTE: this whole logic is very most likely a big performance concern, mostly because of GetNearestActiveEffect
-                    if (!SelectedEffect.IsToggle || SelectedEffect.ActiveCount == 0)
+                    if (!TryGetTargetedEffect(hit))
                     {
                         IsDeleteIndicatorActive = false;
                         return;
                     }
-                    Transform effectParent;
-                    Transform effectClonesParent = SelectedEffect.effectClonesParent;
-                    // the `hit.transform` can be null when pointing at VRChat's internal things such as the VRChat menu
-                    // or VRChat players. I'm assuming it is an udon specific thing where they null out any transform/component you're
-                    // trying to get if it is one of their internal ones
-                    if (hit.transform != null && hit.transform.IsChildOf(effectClonesParent))
-                    {
-                        effectParent = hit.transform;
-                        while (true)
-                        {
-                            var parent = effectParent.parent;
-                            if (parent == effectClonesParent)
-                                break;
-                            effectParent = parent;
-                        }
-                        DeleteTargetIndex = effectParent.GetSiblingIndex();
-                    }
-                    else if (IsDeleteIndicatorActive && IsDeletePreviewActive && hit.transform != null && selectedDeletePreview != null
-                        && hit.transform.IsChildOf(selectedDeletePreview))
-                    {
-                        if (!SelectedEffect.ActiveEffects[DeleteTargetIndex])
-                        {
-                            IsDeleteIndicatorActive = false;
-                            return;
-                        }
-                        // do nothing otherwise :)
-                        effectParent = SelectedEffect.EffectParents[DeleteTargetIndex];
-                    }
-                    else
-                    {
-                        DeleteTargetIndex = SelectedEffect.GetNearestActiveEffect(hit.point);
-                        effectParent = SelectedEffect.EffectParents[DeleteTargetIndex];
-                    }
+                    DeleteTargetIndex = outTargetedEffectIndex;
+                    Transform effectParent = SelectedEffect.EffectParents[DeleteTargetIndex];
                     Vector3 position = effectParent.position + effectParent.TransformDirection(SelectedEffect.effectLocalCenter);
                     if (SelectedEffect.doLimitDistance && (position - hit.point).magnitude > Mathf.Max(1f, SelectedEffect.effectScale.x * 0.65f))
                     {
