@@ -333,7 +333,8 @@ When this is true said second rotation is random."
 
         private void MakeButton()
         {
-            var button = VRCInstantiate(gun.ButtonPrefab);
+            var button = VRCInstantiate(gun.OriginalEffectButton);
+            button.SetActive(true);
             button.transform.SetParent(gun.ButtonGrid, false);
             buttonData = (EffectButtonData)button.GetComponent(typeof(UdonBehaviour));
             buttonData.descriptor = this;

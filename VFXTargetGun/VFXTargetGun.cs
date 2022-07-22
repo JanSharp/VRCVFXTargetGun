@@ -35,8 +35,8 @@ namespace JanSharp
         [SerializeField] private RectTransform buttonGrid;
         public RectTransform ButtonGrid => buttonGrid;
         [SerializeField] private int columnCount = 4;
-        [SerializeField] private GameObject buttonPrefab;
-        public GameObject ButtonPrefab => buttonPrefab;
+        [SerializeField] private GameObject originalEffectButton;
+        public GameObject OriginalEffectButton => originalEffectButton;
         [SerializeField] private float buttonHeight = 90f;
         [SerializeField] private BoxCollider uiCanvasCollider;
         [SerializeField] private RectTransform itemUIContainer;

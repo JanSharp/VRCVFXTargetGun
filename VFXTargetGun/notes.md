@@ -124,7 +124,7 @@ alright, so, a list for 0.4.0, the quality of life update:
   - [ ] warn about potential oversights like only some particles being looped and some aren't
 - [x] change delete everything description
 - [ ] change everything to toggles with toggle groups
-- [ ] remove button prefab, put the original button in the grid already and disable it
+- [x] remove button prefab, put the original button in the grid already and disable it
 
 maybe:
 
