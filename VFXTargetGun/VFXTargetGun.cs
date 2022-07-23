@@ -1,4 +1,4 @@
-﻿using UdonSharp;
+using UdonSharp;
 using UnityEngine;
 using UnityEngine.UI;
 using VRC.SDKBase;
@@ -375,7 +375,7 @@ namespace JanSharp
                 UpdateDeletePreview();
             }
         }
-        public void UpdateIsDeletePreviewActiveBasedOnToggle() // TODO: update this to use deleteTargetEffectDescriptor
+        public void UpdateIsDeletePreviewActiveBasedOnToggle()
             => IsDeletePreviewActive = deletePreviewToggle.isOn && DeleteTargetEffectDescriptor != null && DeleteTargetEffectDescriptor.IsObject;
         private Transform selectedDeletePreview;
         private bool ShouldDeletePreviewBeActive() => IsDeleteIndicatorActive && IsDeletePreviewActive && DeleteTargetIndex != -1;
