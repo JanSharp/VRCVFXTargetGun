@@ -1,4 +1,4 @@
-﻿using UdonSharp;
+using UdonSharp;
 using UnityEngine;
 using UnityEngine.UI;
 using VRC.SDKBase;
@@ -503,8 +503,6 @@ namespace JanSharp
                 if (descriptor != null)
                     descriptor.Init();
             }
-            // if (selectedEffectIndex != -1)
-            //     SelectedEffect = descriptors[selectedEffectIndex];
             placeDeleteModeToggle.gameObject.SetActive(true);
         }
 
