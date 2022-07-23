@@ -115,7 +115,7 @@ alright, so, a list for 0.4.0, the quality of life update:
 - [x] fix "recalling"
 - [x] clean up visibility toggle
 - [x] clean up gun assignment
-- [ ] delete any effect (with a collider) in delete mode, not just selected effects (maybe there is something smart to be done about loop effects so we don't have to iterate all active ones)
+- [x] delete any effect (with a collider) in delete mode, not just selected effects (maybe there is something smart to be done about loop effects so we don't have to iterate all active ones)
 - [ ] Q picking like Factorio
 - [ ] support colliders for non obj effects
 - [ ] support mesh renderers for non obj effects to have a "preview" (?)

@@ -56,7 +56,6 @@ namespace JanSharp
         [SerializeField] private Transform deleteIndicator;
         [SerializeField] private Transform laser;
         [SerializeField] private Transform secondLaser;
-        private float laserBaseScale;
         [SerializeField] private Renderer uiToggleRenderer;
         [SerializeField] private Toggle keepOpenToggle;
         public Toggle KeepOpenToggle => keepOpenToggle;
@@ -77,6 +76,7 @@ namespace JanSharp
 
         // set OnBuild
         [SerializeField] [HideInInspector] private MeshRenderer[] gunMeshRenderers;
+        [SerializeField] [HideInInspector] private float laserBaseScale;
         [SerializeField] [HideInInspector] public EffectDescriptor[] descriptors;
 
         #if UNITY_EDITOR && !COMPILER_UDONSHARP
@@ -93,7 +93,7 @@ namespace JanSharp
                     + $" and drag it to the 'Effects Parent' of the {nameof(VFXTargetGun)}.");
                 return false;
             }
-            if (gunMesh == null || orderSync == null)
+            if (gunMesh == null || laser == null || orderSync == null)
             {
                 Debug.LogError("VFX Target gun requires all internal references to be set in the inspector.");
                 return false;
@@ -114,6 +114,7 @@ namespace JanSharp
                 else
                     descriptor.InitAtBuildTime(this, i);
             }
+            laserBaseScale = laser.localScale.z;
             this.ApplyProxyModifications();
             return result;
         }
@@ -140,6 +141,11 @@ namespace JanSharp
                         mat.color = color;
                 placeDeleteModeToggle.InteractionText = IsPlaceMode ? "Switch to Delete" : "Switch to Place";
                 UpdateUseText();
+                if (IsHeld)
+                    if (!IsPlaceMode) // NOTE: what should EditMode do in this case?
+                        laser.gameObject.SetActive(true);
+                    else if (SelectedEffect == null)
+                        laser.gameObject.SetActive(false);
             }
         }
         public bool IsPlaceMode => Mode == PlaceMode;
@@ -220,7 +226,6 @@ namespace JanSharp
                     selectedEffect.Selected = false;
                 selectedEffect = value; // update `selectedEffect` before setting `Selected` to true on an effect descriptor
                 UpdateIsPlacePreviewActiveBasedOnToggle();
-                UpdateIsDeletePreviewActiveBasedOnToggle();
                 if (value == null)
                 {
                     UpdateColors();
@@ -228,8 +233,8 @@ namespace JanSharp
                     selectedEffectNameTextRightHand.text = "";
                     IsPlaceIndicatorActive = false;
                     IsDeleteIndicatorActive = false;
-                    laser.gameObject.SetActive(false);
-                    IsDeletePreviewActive = false;
+                    if (IsPlaceMode) // NOTE: what should EditMode do in this case?
+                        laser.gameObject.SetActive(false);
                 }
                 else
                 {
@@ -240,7 +245,6 @@ namespace JanSharp
                         laser.gameObject.SetActive(true);
                     deleteIndicator.localScale = value.effectScale;
                     placeIndicatorForwardsArrow.SetActive(!value.randomizeRotation);
-                    IsDeletePreviewActive = value.IsObject && deletePreviewToggle.isOn;
                 }
                 UpdateUseText();
             }
@@ -253,6 +257,8 @@ namespace JanSharp
             {
                 if (isHeld == value)
                     return;
+                if (!initialized)
+                    Init();
                 isHeld = value;
                 if (value)
                 {
@@ -264,7 +270,7 @@ namespace JanSharp
                         uiCanvasCollider.enabled = false;
                     }
                     UManager.Register(this);
-                    if (SelectedEffect != null)
+                    if (SelectedEffect != null || !IsPlaceMode) // NOTE: what should EditMode do in this case?
                         laser.gameObject.SetActive(true);
                     Vector3 togglePos = placeDeleteModeToggle.transform.localPosition;
                     if (pickup.currentHand == VRC_Pickup.PickupHand.Left)
@@ -299,6 +305,19 @@ namespace JanSharp
             }
         }
 
+        private EffectDescriptor deleteTargetEffectDescriptor;
+        private EffectDescriptor DeleteTargetEffectDescriptor
+        {
+            get => deleteTargetEffectDescriptor;
+            set
+            {
+                if (deleteTargetEffectDescriptor == value)
+                    return;
+                DeleteTargetIndex = -1;
+                deleteTargetEffectDescriptor = value;
+                UpdateIsDeletePreviewActiveBasedOnToggle();
+            }
+        }
         private int deleteTargetIndex = -1;
         private int DeleteTargetIndex
         {
@@ -307,8 +326,8 @@ namespace JanSharp
             {
                 if (deleteTargetIndex == value)
                     return;
-                if (SelectedEffect != null && SelectedEffect.IsObject && deleteTargetIndex != -1)
-                    SelectedEffect.EffectParents[deleteTargetIndex].gameObject.SetActive(SelectedEffect.ActiveEffects[deleteTargetIndex]);
+                if (deleteTargetEffectDescriptor != null && deleteTargetEffectDescriptor.IsObject && deleteTargetIndex != -1)
+                    deleteTargetEffectDescriptor.EffectParents[deleteTargetIndex].gameObject.SetActive(deleteTargetEffectDescriptor.ActiveEffects[deleteTargetIndex]);
                 deleteTargetIndex = value;
                 UpdateDeletePreview();
             }
@@ -341,17 +360,18 @@ namespace JanSharp
                 UpdateDeletePreview();
             }
         }
-        public void UpdateIsDeletePreviewActiveBasedOnToggle()
-            => IsDeletePreviewActive = deletePreviewToggle.isOn && SelectedEffect != null && SelectedEffect.IsObject;
+        public void UpdateIsDeletePreviewActiveBasedOnToggle() // TODO: update this to use deleteTargetEffectDescriptor
+            => IsDeletePreviewActive = deletePreviewToggle.isOn && DeleteTargetEffectDescriptor != null && DeleteTargetEffectDescriptor.IsObject;
         private Transform selectedDeletePreview;
+        private bool ShouldDeletePreviewBeActive() => IsDeleteIndicatorActive && IsDeletePreviewActive && DeleteTargetIndex != -1;
         private void UpdateDeletePreview()
         {
-            if (IsDeleteIndicatorActive && IsDeletePreviewActive && DeleteTargetIndex != -1)
+            if (ShouldDeletePreviewBeActive())
             {
                 if (selectedDeletePreview == null)
-                    selectedDeletePreview = SelectedEffect.GetDeletePreview();
+                    selectedDeletePreview = DeleteTargetEffectDescriptor.GetDeletePreview();
                 selectedDeletePreview.gameObject.SetActive(true);
-                var effectParent = SelectedEffect.EffectParents[DeleteTargetIndex];
+                var effectParent = DeleteTargetEffectDescriptor.EffectParents[DeleteTargetIndex];
                 selectedDeletePreview.SetPositionAndRotation(effectParent.position, effectParent.rotation);
                 effectParent.gameObject.SetActive(false);
                 deleteIndicator.gameObject.SetActive(false);
@@ -361,7 +381,7 @@ namespace JanSharp
                 if (selectedDeletePreview != null)
                     selectedDeletePreview.gameObject.SetActive(false);
                 if (DeleteTargetIndex != -1)
-                    SelectedEffect.EffectParents[DeleteTargetIndex].gameObject.SetActive(true);
+                    DeleteTargetEffectDescriptor.EffectParents[DeleteTargetIndex].gameObject.SetActive(true);
                 deleteIndicator.gameObject.SetActive(IsDeleteIndicatorActive);
             }
         }
@@ -486,7 +506,6 @@ namespace JanSharp
             // if (selectedEffectIndex != -1)
             //     SelectedEffect = descriptors[selectedEffectIndex];
             placeDeleteModeToggle.gameObject.SetActive(true);
-            laserBaseScale = laser.localScale.z;
         }
 
         private ColorBlock MakeColorBlock(Color color)
@@ -572,8 +591,6 @@ namespace JanSharp
 
         public void UseSelectedEffect()
         {
-            if (SelectedEffect == null)
-                return;
             if (IsPlaceMode)
             {
                 if (IsPlaceIndicatorActive)
@@ -586,7 +603,7 @@ namespace JanSharp
             {
                 if (IsDeleteIndicatorActive)
                 {
-                    SelectedEffect.StopToggleEffect(DeleteTargetIndex);
+                    DeleteTargetEffectDescriptor.StopToggleEffect(DeleteTargetIndex);
                     IsDeleteIndicatorActive = false;
                 }
             }
@@ -697,40 +714,52 @@ namespace JanSharp
         }
 
         // since we can't use out parameters
-        private EffectDescriptor outTargetedEffect;
+        private EffectDescriptor outTargetedEffectDescriptor;
         private int outTargetedEffectIndex;
         private bool TryGetTargetedEffect(RaycastHit hit)
         {
-            // NOTE: this whole logic is very most likely a big performance concern, mostly because of GetNearestActiveEffect
-            if (!SelectedEffect.IsToggle || SelectedEffect.ActiveCount == 0)
-                return false;
-            Transform effectClonesParent = SelectedEffect.effectClonesParent;
             // the `hit.transform` can be null when pointing at VRChat's internal things such as the VRChat menu
             // or VRChat players. I'm assuming it is an udon specific thing where they null out any transform/component you're
             // trying to get if it is one of their internal ones
-            if (hit.transform != null && hit.transform.IsChildOf(effectClonesParent))
+            if (hit.transform != null && hit.transform.IsChildOf(effectsParent))
             {
-                Transform effectParent = hit.transform;
+                Transform effectDescriptorTransform = hit.transform;
+                Transform effectClonesParentTransform = null;
+                Transform clonedEffectParent = null;
                 while (true)
                 {
-                    var parent = effectParent.parent;
-                    if (parent == effectClonesParent)
+                    var parent = effectDescriptorTransform.parent;
+                    if (parent == effectsParent)
                         break;
-                    effectParent = parent;
+                    clonedEffectParent = effectClonesParentTransform;
+                    effectClonesParentTransform = effectDescriptorTransform;
+                    effectDescriptorTransform = parent;
                 }
-                outTargetedEffectIndex = effectParent.GetSiblingIndex();
+                outTargetedEffectDescriptor = descriptors[effectDescriptorTransform.GetSiblingIndex()];
+                if (hit.transform.IsChildOf(outTargetedEffectDescriptor.effectClonesParent)) // don't count the previews
+                {
+                    outTargetedEffectIndex = clonedEffectParent.GetSiblingIndex();
+                    return true;
+                }
             }
-            else if (IsDeleteMode && IsDeleteIndicatorActive && IsDeletePreviewActive
+
+            // in delete mode we might be pointing at the currently active delete preview.
+            // checking for effect active state because the effect might have been deleted while the local player was previewing it
+            if (ShouldDeletePreviewBeActive() && DeleteTargetEffectDescriptor.ActiveEffects[DeleteTargetIndex]
                 && hit.transform != null && selectedDeletePreview != null && hit.transform.IsChildOf(selectedDeletePreview))
             {
-                if (!SelectedEffect.ActiveEffects[DeleteTargetIndex]) // the effect was deleted while the local player was previewing it
-                    return false;
+                outTargetedEffectDescriptor = DeleteTargetEffectDescriptor;
                 outTargetedEffectIndex = DeleteTargetIndex;
+                return true;
             }
-            else
-            {
-                outTargetedEffectIndex = SelectedEffect.GetNearestActiveEffect(hit.point);
-            }
+
+            // we are not going to go through all effects to try to find the nearest one, nope.
+            if (SelectedEffect == null || !SelectedEffect.IsToggle || SelectedEffect.ActiveCount == 0)
+                return false;
+
+            outTargetedEffectDescriptor = SelectedEffect;
+            // NOTE: GetNearestActiveEffect is probably a performance concern, but it's still required for effects without colliders
+            outTargetedEffectIndex = SelectedEffect.GetNearestActiveEffect(hit.point);
             return true;
         }
 
@@ -808,7 +837,9 @@ namespace JanSharp
                     ProcessAlphaNumericKeyDown(0);
             }
 
-            if (SelectedEffect == null)
+            // don't early return for DeleteMode because you can delete objects without having a selected effect
+            // NOTE: what should EditMode do in this case?
+            if (SelectedEffect == null && IsPlaceMode)
                 return;
 
             RaycastHit hit;
@@ -835,10 +866,12 @@ namespace JanSharp
                         IsDeleteIndicatorActive = false;
                         return;
                     }
+                    DeleteTargetEffectDescriptor = outTargetedEffectDescriptor; // has to be set before setting DeleteTargetIndex
                     DeleteTargetIndex = outTargetedEffectIndex;
-                    Transform effectParent = SelectedEffect.EffectParents[DeleteTargetIndex];
-                    Vector3 position = effectParent.position + effectParent.TransformDirection(SelectedEffect.effectLocalCenter);
-                    if (SelectedEffect.doLimitDistance && (position - hit.point).magnitude > Mathf.Max(1f, SelectedEffect.effectScale.x * 0.65f))
+                    Transform effectParent = DeleteTargetEffectDescriptor.EffectParents[DeleteTargetIndex];
+                    Vector3 position = effectParent.position + effectParent.TransformDirection(DeleteTargetEffectDescriptor.effectLocalCenter);
+                    if (DeleteTargetEffectDescriptor.doLimitDistance
+                        && (position - hit.point).magnitude > Mathf.Max(1f, DeleteTargetEffectDescriptor.effectScale.x * 0.65f))
                     {
                         IsDeleteIndicatorActive = false;
                         return;
