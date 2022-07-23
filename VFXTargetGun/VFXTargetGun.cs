@@ -209,6 +209,21 @@ namespace JanSharp
                 return uManager;
             }
         }
+        private bool initializedIsUserInVR;
+        private bool isUserInVR;
+        private bool IsUserInVR
+        {
+            get
+            {
+                if (initializedIsUserInVR)
+                    return isUserInVR;
+                if (Networking.LocalPlayer == null)
+                    return false;
+                initializedIsUserInVR = true;
+                isUserInVR = Networking.LocalPlayer.IsUserInVR();
+                return isUserInVR;
+            }
+        }
         private bool initialized;
         private EffectDescriptor selectedEffect;
         public EffectDescriptor SelectedEffect
@@ -262,7 +277,7 @@ namespace JanSharp
                 isHeld = value;
                 if (value)
                 {
-                    if (!Networking.LocalPlayer.IsUserInVR())
+                    if (!IsUserInVR)
                     {
                         mainWindow.SetParent(screenUIContainer, false);
                         confirmationWindow.SetParent(screenUIContainer, false);
@@ -289,7 +304,7 @@ namespace JanSharp
                 }
                 else
                 {
-                    if (!Networking.LocalPlayer.IsUserInVR())
+                    if (!IsUserInVR)
                     {
                         mainWindow.SetParent(itemUIContainer, false);
                         confirmationWindow.SetParent(itemUIContainer, false);
@@ -582,7 +597,7 @@ namespace JanSharp
                 Init();
             itemUIContainer.gameObject.SetActive(active);
             screenUIContainer.gameObject.SetActive(active);
-            if (Networking.LocalPlayer != null && !Networking.LocalPlayer.IsUserInVR() && !IsHeld)
+            if (!IsUserInVR && !IsHeld)
                 uiCanvasCollider.enabled = active;
             uiToggle.gameObject.SetActive(!active);
         }
