@@ -1,4 +1,4 @@
-using UdonSharp;
+﻿using UdonSharp;
 using UnityEngine;
 using UnityEngine.UI;
 using VRC.SDKBase;
@@ -142,7 +142,7 @@ namespace JanSharp
                 placeDeleteModeToggle.InteractionText = IsPlaceMode ? "Switch to Delete" : "Switch to Place";
                 UpdateUseText();
                 if (IsHeld)
-                    if (!IsPlaceMode) // NOTE: what should EditMode do in this case?
+                    if (!IsUserInVR || !IsPlaceMode) // NOTE: what should EditMode do in this case?
                         laser.gameObject.SetActive(true);
                     else if (SelectedEffect == null)
                         laser.gameObject.SetActive(false);
@@ -248,7 +248,7 @@ namespace JanSharp
                     selectedEffectNameTextRightHand.text = "";
                     IsPlaceIndicatorActive = false;
                     IsDeleteIndicatorActive = false;
-                    if (IsPlaceMode) // NOTE: what should EditMode do in this case?
+                    if (IsUserInVR && IsPlaceMode) // NOTE: what should EditMode do in this case?
                         laser.gameObject.SetActive(false);
                 }
                 else
@@ -285,7 +285,7 @@ namespace JanSharp
                         uiCanvasCollider.enabled = false;
                     }
                     UManager.Register(this);
-                    if (SelectedEffect != null || !IsPlaceMode) // NOTE: what should EditMode do in this case?
+                    if (SelectedEffect != null || !IsUserInVR || !IsPlaceMode) // NOTE: what should EditMode do in this case?
                         laser.gameObject.SetActive(true);
                     Vector3 togglePos = placeDeleteModeToggle.transform.localPosition;
                     if (pickup.currentHand == VRC_Pickup.PickupHand.Left)
@@ -472,7 +472,10 @@ namespace JanSharp
 
         public void Recall()
         {
-            var data = Networking.LocalPlayer.GetTrackingData(VRCPlayerApi.TrackingDataType.RightHand);
+            var player = Networking.LocalPlayer;
+            if (player == null)
+                return;
+            var data = player.GetTrackingData(VRCPlayerApi.TrackingDataType.RightHand);
             pickup.transform.position = data.position;
         }
 
@@ -778,6 +781,8 @@ namespace JanSharp
 
         public void CustomUpdate()
         {
+            RaycastHit hit;
+
             if (holdingTab)
             {
                 if (Input.GetKey(KeyCode.Tab))
@@ -819,7 +824,15 @@ namespace JanSharp
 
                 // effect selection
                 if (Input.GetKeyDown(KeyCode.Q))
-                    SelectedEffect = null;
+                {
+                    if (SelectedEffect != null)
+                        SelectedEffect = null;
+                    else if (Physics.Raycast(aimPoint.position, aimPoint.forward, out hit, maxDistance, rayLayerMask.value)
+                        && TryGetTargetedEffect(hit))
+                    {
+                        SelectedEffect = outTargetedEffectDescriptor;
+                    }
+                }
                 else if (Input.GetKeyDown(KeyCode.Tab))
                 {
                     if (!initialized)
@@ -852,25 +865,31 @@ namespace JanSharp
 
             // don't early return for DeleteMode because you can delete objects without having a selected effect
             // NOTE: what should EditMode do in this case?
-            if (SelectedEffect == null && IsPlaceMode)
+            if (IsUserInVR && IsPlaceMode && SelectedEffect == null)
                 return;
 
-            RaycastHit hit;
             if (Physics.Raycast(aimPoint.position, aimPoint.forward, out hit, maxDistance, rayLayerMask.value))
             {
                 laser.localScale = new Vector3(1f, 1f, (aimPoint.position - hit.point).magnitude * laserBaseScale);
                 if (IsPlaceMode)
                 {
-                    var position = hit.point;
-                    var rotation = Quaternion.LookRotation(hit.normal, aimPoint.forward);
-                    placeIndicator.SetPositionAndRotation(position, rotation);
-                    if (IsPlacePreviewActive && selectedPlacePreview != null)
+                    if (SelectedEffect != null)
                     {
-                        if (SelectedEffect.randomizeRotation)
-                            rotation = rotation * SelectedEffect.nextRandomRotation;
-                        selectedPlacePreview.SetPositionAndRotation(position, rotation);
+                        var position = hit.point;
+                        var rotation = Quaternion.LookRotation(hit.normal, aimPoint.forward);
+                        placeIndicator.SetPositionAndRotation(position, rotation);
+                        if (IsPlacePreviewActive && selectedPlacePreview != null)
+                        {
+                            if (SelectedEffect.randomizeRotation)
+                                rotation = rotation * SelectedEffect.nextRandomRotation;
+                            selectedPlacePreview.SetPositionAndRotation(position, rotation);
+                        }
+                        IsPlaceIndicatorActive = true;
                     }
-                    IsPlaceIndicatorActive = true;
+                    else
+                    {
+                        // TODO: targeted preview
+                    }
                 }
                 else if (IsDeleteMode)
                 {
