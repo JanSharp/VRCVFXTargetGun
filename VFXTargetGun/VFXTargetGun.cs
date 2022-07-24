@@ -282,6 +282,10 @@ namespace JanSharp
                 if (!initialized)
                     Init();
                 isHeld = value;
+                #if UNITY_EDITOR
+                foreach (Collider collider in pickup.GetComponents<Collider>())
+                    collider.enabled = !value;
+                #endif
                 if (value)
                 {
                     if (!IsUserInVR)
