@@ -127,6 +127,7 @@ alright, so, a list for 0.4.0, the quality of life update:
 - [x] change mode buttons to toggles with toggle groups
 - [ ] change effect buttons to toggles with toggle groups
 - [x] remove button prefab, put the original button in the grid already and disable it
+- [ ] disable pickup collider while the gun is held in the unity play mode because god it's annoying
 
 maybe:
 

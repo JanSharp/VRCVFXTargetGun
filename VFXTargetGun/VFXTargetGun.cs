@@ -240,7 +240,6 @@ namespace JanSharp
                 DeleteTargetIndex = -1; // set before changing selected effect
                 HighlightTargetIndex = -1; // set before changing selected effect
                 IsPlacePreviewActive = false; // disable before changing selected effect so the current preview gets disabled
-                selectedDeletePreview = null; // this can be anywhere but I put it here for organization
                 selectedPlacePreview = null; // this however has to be here, after `IsPlacePreviewActive = false` but before `UpdateIsPlacePreviewActiveBasedOnToggle`
                 if (selectedEffect != null)
                     selectedEffect.Selected = false;
@@ -338,6 +337,7 @@ namespace JanSharp
                 if (deleteTargetEffectDescriptor == value)
                     return;
                 DeleteTargetIndex = -1;
+                selectedDeletePreview = null;
                 deleteTargetEffectDescriptor = value;
                 UpdateIsDeletePreviewActiveBasedOnToggle();
             }
