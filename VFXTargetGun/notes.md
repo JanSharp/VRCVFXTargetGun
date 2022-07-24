@@ -113,7 +113,7 @@ alright, so, a list for 0.4.0, the quality of life update:
   - [x] a changelog tab
     - [ ] update changelog and changelog tab with 0.4.0
   - [x] an about tab
-  - [ ] maybe make the window a bit bigger now that there is more text... maybe... probably
+  - [x] maybe make the window a bit bigger now that there is more text... maybe... probably
 - [x] fix "recalling"
 - [x] clean up visibility toggle
 - [x] clean up gun assignment
