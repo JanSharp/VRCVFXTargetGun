@@ -130,6 +130,12 @@ alright, so, a list for 0.4.0, the quality of life update:
 - [ ] change effect buttons to toggles with toggle groups
 - [x] remove button prefab, put the original button in the grid already and disable it
 - [x] disable pickup collider while the gun is held in the unity play mode because god it's annoying
+- [ ] add local vs global effect management
+  - [ ] 2 delete everything buttons - "delete mine" and "delete everyone's"
+  - [ ] 2 stop/delete all buttons per effect, again one for "mine" and one for "every"
+  - [ ] 2 counts per effect
+  - [ ] 2 counts for total effects
+    - [ ] include these counts in the confirmation UI
 
 maybe:
 
