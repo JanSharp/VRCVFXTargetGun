@@ -74,6 +74,31 @@ When this is true said second rotation is random."
             return placePreview;
         }
 
+        private Transform highlightPreview;
+        public Transform GetHighlightPreview()
+        {
+            if (highlightPreview == null)
+            {
+                var obj = VRCInstantiate(originalEffectObject);
+                highlightPreview = obj.transform;
+                highlightPreview.parent = this.transform;
+                // replace all materials
+                foreach (var renderer in highlightPreview.GetComponentsInChildren<Renderer>())
+                {
+                    var materials = renderer.materials;
+                    for (int i = 0; i < materials.Length; i++)
+                        materials[i] = gun.highlightMaterial;
+                    renderer.materials = materials;
+                }
+                // disable all colliders
+                foreach (var collider in highlightPreview.GetComponentsInChildren<Collider>())
+                    collider.enabled = false;
+                // scale it up just a little bit
+                highlightPreview.localScale = highlightPreview.localScale * 1.01f;
+            }
+            return highlightPreview;
+        }
+
         private Transform deletePreview;
         public Transform GetDeletePreview()
         {

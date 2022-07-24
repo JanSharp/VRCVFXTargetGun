@@ -1,9 +1,10 @@
-using UdonSharp;
+﻿using UdonSharp;
 using UnityEngine;
 using UnityEngine.UI;
 using VRC.SDKBase;
 using VRC.Udon;
 using TMPro;
+using VRC.Udon.Common;
 #if UNITY_EDITOR && !COMPILER_UDONSHARP
 using UnityEditor;
 using UdonSharpEditor;
@@ -56,6 +57,7 @@ namespace JanSharp
         [SerializeField] private Transform deleteIndicator;
         [SerializeField] private Transform laser;
         [SerializeField] private Transform secondLaser;
+        [SerializeField] private Transform highlightLaser;
         [SerializeField] private Renderer uiToggleRenderer;
         [SerializeField] private Toggle keepOpenToggle;
         public Toggle KeepOpenToggle => keepOpenToggle;
@@ -73,6 +75,7 @@ namespace JanSharp
         [SerializeField] private VFXTargetGunEffectsFullSync fullSync;
         [SerializeField] public Material placePreviewMaterial;
         [SerializeField] public Material deletePreviewMaterial;
+        [SerializeField] public Material highlightMaterial;
 
         // set OnBuild
         [SerializeField] [HideInInspector] private MeshRenderer[] gunMeshRenderers;
@@ -134,6 +137,7 @@ namespace JanSharp
                     return;
                 IsPlaceIndicatorActive = false;
                 IsDeleteIndicatorActive = false;
+                IsHighlightActive = false;
                 mode = value;
                 var color = GetModeColor(mode);
                 foreach (var renderer in gunMeshRenderers)
@@ -234,6 +238,7 @@ namespace JanSharp
                 if (value == selectedEffect)
                     return;
                 DeleteTargetIndex = -1; // set before changing selected effect
+                HighlightTargetIndex = -1; // set before changing selected effect
                 IsPlacePreviewActive = false; // disable before changing selected effect so the current preview gets disabled
                 selectedDeletePreview = null; // this can be anywhere but I put it here for organization
                 selectedPlacePreview = null; // this however has to be here, after `IsPlacePreviewActive = false` but before `UpdateIsPlacePreviewActiveBasedOnToggle`
@@ -248,6 +253,7 @@ namespace JanSharp
                     selectedEffectNameTextRightHand.text = "";
                     IsPlaceIndicatorActive = false;
                     IsDeleteIndicatorActive = false;
+                    IsHighlightActive = false;
                     if (IsUserInVR && IsPlaceMode) // NOTE: what should EditMode do in this case?
                         laser.gameObject.SetActive(false);
                 }
@@ -260,6 +266,8 @@ namespace JanSharp
                         laser.gameObject.SetActive(true);
                     deleteIndicator.localScale = value.effectScale;
                     placeIndicatorForwardsArrow.SetActive(!value.randomizeRotation);
+                    if (IsPlaceMode)
+                        IsHighlightActive = false;
                 }
                 UpdateUseText();
             }
@@ -314,6 +322,7 @@ namespace JanSharp
                     }
                     IsPlaceIndicatorActive = false;
                     IsDeleteIndicatorActive = false;
+                    IsHighlightActive = false;
                     UManager.Deregister(this);
                     laser.gameObject.SetActive(false);
                 }
@@ -442,6 +451,68 @@ namespace JanSharp
             {
                 if (selectedPlacePreview != null)
                     selectedPlacePreview.gameObject.SetActive(false);
+            }
+        }
+
+        private EffectDescriptor highlightTargetEffectDescriptor;
+        private EffectDescriptor HighlightTargetEffectDescriptor
+        {
+            get => highlightTargetEffectDescriptor;
+            set
+            {
+                if (highlightTargetEffectDescriptor == value)
+                    return;
+                HighlightTargetIndex = -1;
+                selectedHighlightObj = null;
+                highlightTargetEffectDescriptor = value;
+                EvaluateIsHighlightActive();
+            }
+        }
+        private int highlightTargetIndex = -1;
+        private int HighlightTargetIndex
+        {
+            get => highlightTargetIndex;
+            set
+            {
+                if (highlightTargetIndex == value)
+                    return;
+                highlightTargetIndex = value;
+                UpdateHighlightObj();
+            }
+        }
+        private bool isHighlightActive;
+        private bool IsHighlightActive
+        {
+            get => isHighlightActive;
+            set
+            {
+                if (isHighlightActive == value)
+                    return;
+                isHighlightActive = value;
+                highlightLaser.gameObject.SetActive(value);
+                UpdateHighlightObj();
+                if (!value)
+                    HighlightTargetIndex = -1;
+            }
+        }
+        public void EvaluateIsHighlightActive()
+            => IsHighlightActive = HighlightTargetEffectDescriptor != null && HighlightTargetEffectDescriptor.IsObject;
+        private Transform selectedHighlightObj;
+        private bool ShouldHighlightObjBeActive() => IsHighlightActive && HighlightTargetIndex != -1;
+        private void UpdateHighlightObj()
+        {
+            if (ShouldHighlightObjBeActive())
+            {
+                if (selectedHighlightObj == null)
+                    selectedHighlightObj = HighlightTargetEffectDescriptor.GetHighlightPreview();
+                selectedHighlightObj.gameObject.SetActive(true);
+                var effectParent = HighlightTargetEffectDescriptor.EffectParents[HighlightTargetIndex];
+                selectedHighlightObj.SetPositionAndRotation(effectParent.position, effectParent.rotation);
+            }
+            else
+            {
+                if (selectedHighlightObj != null)
+                    selectedHighlightObj.gameObject.SetActive(false);
             }
         }
 
@@ -888,7 +959,18 @@ namespace JanSharp
                     }
                     else
                     {
-                        // TODO: targeted preview
+                        if (!TryGetTargetedEffect(hit))
+                        {
+                            IsHighlightActive = false;
+                            return;
+                        }
+                        HighlightTargetEffectDescriptor = outTargetedEffectDescriptor; // has to be set before setting HighlightTargetIndex
+                        HighlightTargetIndex = outTargetedEffectIndex;
+                        Transform effectParent = HighlightTargetEffectDescriptor.EffectParents[HighlightTargetIndex];
+                        Vector3 position = effectParent.position + effectParent.TransformDirection(HighlightTargetEffectDescriptor.effectLocalCenter);
+                        highlightLaser.localScale = new Vector3(1f, 1f, (aimPoint.position - position).magnitude * laserBaseScale);
+                        highlightLaser.LookAt(position);
+                        IsHighlightActive = true;
                     }
                 }
                 else if (IsDeleteMode)
@@ -918,6 +1000,7 @@ namespace JanSharp
             {
                 laser.localScale = new Vector3(1f, 1f, maxDistance * laserBaseScale);
                 IsPlaceIndicatorActive = false;
+                IsHighlightActive = false;
                 IsDeleteIndicatorActive = false;
             }
         }
