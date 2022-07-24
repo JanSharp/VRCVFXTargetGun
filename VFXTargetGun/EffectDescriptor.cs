@@ -124,8 +124,6 @@ When this is true said second rotation is random."
         public ParticleSystem[][] ParticleSystems { get; private set; }
         public bool[] ActiveEffects { get; private set; }
         private byte[] lastPerformedActions;
-        private const byte JustGotCreatedFlag = 0b01;
-        private const byte ResolvingCollisionFlag = 0b10;
         private bool[] fadingOut;
         public int MaxCount { get; private set; }
         private int fadingOutCount;
