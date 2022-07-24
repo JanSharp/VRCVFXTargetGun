@@ -114,6 +114,7 @@ alright, so, a list for 0.4.0, the quality of life update:
     - [ ] update changelog and changelog tab with 0.4.0
   - [x] an about tab
   - [x] maybe make the window a bit bigger now that there is more text... maybe... probably
+- [x] add text mesh pro font asset and material to not use the default one which might have been modified by someone else
 - [x] fix "recalling"
 - [x] clean up visibility toggle
 - [x] clean up gun assignment
