@@ -107,11 +107,13 @@ alright, so, a list for 0.4.0, the quality of life update:
 
 - [x] only have a single effect descriptor for each effect, not per gun
 - [x] only have one single local only gun
-- [ ] better help window with tabs
-  - [ ] a general info tab
-  - [ ] a shortcuts tab
-  - [ ] a changelog tab
-  - [ ] an about tab
+- [x] better help window with tabs
+  - [x] a general info tab
+  - [x] a key binds tab
+  - [x] a changelog tab
+    - [ ] update changelog and changelog tab with 0.4.0
+  - [x] an about tab
+  - [ ] maybe make the window a bit bigger now that there is more text... maybe... probably
 - [x] fix "recalling"
 - [x] clean up visibility toggle
 - [x] clean up gun assignment

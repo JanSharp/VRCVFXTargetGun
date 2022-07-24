@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0, g: 0, b: 0, a: 1}
+  m_IndirectSpecularColor: {r: 0.18028378, g: 0.22571412, b: 0.30692285, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -1440,17 +1440,66 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'Place effects using <b>Place</b> mode, delete effects using <b>Delete</b>
-    mode.
+  m_text: '<size=125%><b>Effect Types</b><size=100%>
 
-    <b>Loop</b> effects are particle systems that loop until they are
-    deleted.
+    <line-height=10%>
 
-    <b>Once</b> effects are the opposite to <b>Loop</b> effects as
-    they do not loop. <b>Once</b> effects cannot be deleted.
+    <line-height=100%>-
+    <indent=3%><b>Loop</b> effects are particle systems that loop until they are
+    deleted.</indent>
 
-    <b>Object</b> effects
-    are static objects and behave similar to <b>Loop</b> effects.'
+    <line-height=10%>
+
+    <line-height=100%>- <indent=3%><b>Once</b>
+    effects are the opposite to <b>Loop</b> effects as they do not loop. <b>Once</b>
+    effects cannot be deleted, they simply run out.</indent>
+
+    <line-height=10%>
+
+    <line-height=100%>-
+    <indent=3%><b>Object</b> effects are static objects and behave similar to <b>Loop</b>
+    effects.</indent>
+
+    <line-height=30%>
+
+    <line-height=100%><size=125%><b>Effect
+    Selection</b><size=100%>
+
+    <line-height=10%>
+
+    <line-height=100%>An effect
+    may be selected through the UI, as well as completely deselected using the Deselect
+    button. There are also several key binds for desktop users, see the <b>Key Binds</b>
+    tab.
+
+    <line-height=30%>
+
+    <line-height=100%><size=125%><b>Modes</b><size=100%>
+
+    <line-height=10%>
+
+    <line-height=100%>-
+    <indent=3%><b>Place</b> mode places and creates the currently selected effect
+    wherever the gun is pointing, taking the slope of the target surface into account.</indent>
+
+    <line-height=10%>
+
+    <line-height=100%>-
+    <indent=3%><b>Delete</b> mode deletes whichever effect is directly pointed at.
+    Pointing near an effect only targets the currently selected effect which may
+    be required for effects which cannot be pointed at.</indent>
+
+    <line-height=30%>
+
+    <line-height=100%><size=125%><b>Mode
+    Selection</b><size=100%>
+
+    <line-height=10%>
+
+    <line-height=100%>Modes
+    are selected in the UI. Switching between Place and Delete mode can be done using
+    the ball down and to the side of the gun. The <b>F</b> key bind does the same
+    but is for desktop users.'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -1477,11 +1526,11 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 16
+  m_fontSize: 9.75
   m_fontSizeBase: 0
   m_fontWeight: 400
   m_enableAutoSizing: 1
-  m_fontSizeMin: 12
+  m_fontSizeMin: 9
   m_fontSizeMax: 16
   m_fontStyle: 0
   m_HorizontalAlignment: 1
@@ -4746,25 +4795,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 653377220}
   m_CullTransparentMesh: 0
---- !u!1 &662351620 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 1094421957795851142, guid: 8894fa7e4588a5c4fab98453e558847d,
-    type: 3}
-  m_PrefabInstance: {fileID: 1763028395}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &662351625
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 662351620}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 229740497, guid: 4ecd63eff847044b68db9453ce219299, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  contentType: 1
 --- !u!1 &668327609
 GameObject:
   m_ObjectHideFlags: 0
@@ -28919,7 +28949,8 @@ MonoBehaviour:
   m_text: "Key Binds while the gun is held:\n\n<b>E</b> - Toggle UI\n<b>F</b> - Toggle
     Place/Delete Mode\n<b>Tab / ctrl+Tab</b> - Cycle selected effect\n<b>1, 2, ...,
     9, 0</b> - Select specific effect\n    (Holding <b>shift</b> will add 10, holding\n   
-    <b>alt</b> will add 20. Can be combined.)\n<b>Q</b> - Deselect"
+    <b>alt</b> will add 20. Can be combined.)\n<b>Q</b> - If an effect is selected,
+    deselect it.\n    Otherwise selects the highlighted effect."
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -28946,12 +28977,12 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 16
+  m_fontSize: 15
   m_fontSizeBase: 0
   m_fontWeight: 400
   m_enableAutoSizing: 1
   m_fontSizeMin: 12
-  m_fontSizeMax: 16
+  m_fontSizeMax: 15
   m_fontStyle: 0
   m_HorizontalAlignment: 1
   m_VerticalAlignment: 256
@@ -38268,14 +38299,15 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'The tool is made by JanSharp.
+  m_text: 'This tool is made by JanSharp.
 
     The actual effects are not apart of
-    the tool, they are added by map makers.
+    the tool, they are added by map maker(s).
 
 
     The tool is going to be available
-    online for everyone to use once I figure out how I want to setup the repo.'
+    online for everyone to use once I figure out how I want to setup the repo and
+    distribute it.'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
