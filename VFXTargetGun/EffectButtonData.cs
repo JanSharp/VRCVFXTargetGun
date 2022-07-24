@@ -10,10 +10,12 @@ namespace JanSharp
     [UdonBehaviourSyncMode(BehaviourSyncMode.None)]
     public class EffectButtonData : UdonSharpBehaviour
     {
-        public TextMeshProUGUI text;
         public Button button;
-        public GameObject stopButton;
-        public TextMeshProUGUI stopButtonText;
+        public TextMeshProUGUI effectNameText;
+        public RectTransform effectNameTransform;
+        public GameObject stopLocalEffectsButton;
+        public GameObject stopGlobalEffectsButton;
+        public TextMeshProUGUI stopLocalEffectsText;
         public TextMeshProUGUI activeCountText;
         public Sprite normalSprite;
         public Sprite selectedSprite;
@@ -21,6 +23,8 @@ namespace JanSharp
 
         public void OnClick() => descriptor.SelectThisEffect();
 
-        public void OnStopClick() => descriptor.StopAllEffects();
+        public void OnStopLocalClick() => descriptor.StopAllEffects(true);
+
+        public void OnStopGlobalClick() => descriptor.StopAllEffects(false);
     }
 }

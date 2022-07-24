@@ -122,7 +122,19 @@ When this is true said second rotation is random."
         [HideInInspector] public Quaternion nextRandomRotation;
         public Transform[] EffectParents { get; private set; }
         public ParticleSystem[][] ParticleSystems { get; private set; }
-        public bool[] ActiveEffects { get; private set; }
+        public bool[] ActiveEffects { get; private set; } // NOTE: whenever setting an effect to inactive also SetLastActionWasByLocalPlayer to false
+        public bool[] LastActionWasByLocalPlayer { get; private set; }
+        private void SetLastActionWasByLocalPlayer(int index, bool value)
+        {
+            if (LastActionWasByLocalPlayer[index] != value)
+            {
+                if (value)
+                    LocalActiveCount++;
+                else
+                    LocalActiveCount--;
+                LastActionWasByLocalPlayer[index] = value;
+            }
+        }
         private byte[] lastPerformedActions;
         private bool[] fadingOut;
         public int MaxCount { get; private set; }
@@ -137,12 +149,33 @@ When this is true said second rotation is random."
                     fadingOutCount = value;
                     // only update colors if the references to the gun and the UI even exists
                     if (buttonData != null)
-                        UpdateColors();
+                        UpdateButtonAppearance();
                 }
                 else
                     fadingOutCount = value;
                 if (buttonData != null)
                     SetActiveCountText();
+            }
+        }
+        private int localActiveCount;
+        public int LocalActiveCount
+        {
+            get => localActiveCount;
+            private set
+            {
+                if (IsToggle)
+                    gun.TotalLocalActiveToggleCount += value - localActiveCount;
+                if (localActiveCount == 0 || value == 0)
+                {
+                    localActiveCount = value;
+                    // only update colors if the references to the gun and the UI even exists
+                    if (buttonData != null)
+                        UpdateButtonAppearance();
+                }
+                else
+                    localActiveCount = value;
+                if (buttonData != null)
+                    UpdateStopLocalEffectsText();
             }
         }
         private int[] toFinishIndexes;
@@ -153,12 +186,14 @@ When this is true said second rotation is random."
             get => activeCount;
             private set
             {
+                if (IsToggle)
+                    gun.TotalGlobalActiveToggleCount += value - activeCount;
                 if (activeCount == 0 || value == 0)
                 {
                     activeCount = value;
                     // only update colors if the references to the gun and the UI even exists
                     if (buttonData != null)
-                        UpdateColors();
+                        UpdateButtonAppearance();
                 }
                 else
                     activeCount = value;
@@ -174,14 +209,14 @@ When this is true said second rotation is random."
             set
             {
                 selected = value;
-                UpdateColors();
+                UpdateButtonAppearance();
             }
         }
 
         // these 3 are only set for people who have opened the UI at some point
         private EffectButtonData buttonData;
 
-        private void UpdateColors()
+        private void UpdateButtonAppearance()
         {
             // update button sprite and color
             buttonData.button.image.sprite = Selected ? buttonData.selectedSprite : buttonData.normalSprite;
@@ -200,11 +235,20 @@ When this is true said second rotation is random."
             }
 
             if (IsToggle)
-                buttonData.stopButton.gameObject.SetActive(ActiveCount != 0);
+            {
+                buttonData.stopLocalEffectsButton.gameObject.SetActive(LocalActiveCount != 0);
+                buttonData.stopGlobalEffectsButton.gameObject.SetActive(ActiveCount != 0);
+                buttonData.effectNameTransform.anchoredPosition = ActiveCount == 0 ? Vector2.zero : Vector2.up * 8f;
+            }
 
             // update the gun if this is the currently selected effect
             if (Selected)
                 gun.UpdateColors();
+        }
+
+        private void UpdateStopLocalEffectsText()
+        {
+            buttonData.stopLocalEffectsText.text = "<size=65%>Stop my\n<size=100%>" + LocalActiveCount.ToString();
         }
 
         private void SetActiveCountText()
@@ -343,6 +387,7 @@ When this is true said second rotation is random."
             if (HasParticleSystems)
                 ParticleSystems = new ParticleSystem[4][];
             ActiveEffects = new bool[4];
+            LastActionWasByLocalPlayer = new bool[4];
             lastPerformedActions = new byte[4];
             if (IsLoop)
                 fadingOut = new bool[4];
@@ -361,9 +406,9 @@ When this is true said second rotation is random."
             button.transform.SetParent(gun.ButtonGrid, false);
             buttonData = (EffectButtonData)button.GetComponent(typeof(UdonBehaviour));
             buttonData.descriptor = this;
-            buttonData.text.text = effectName;
-            buttonData.stopButtonText.text = HasParticleSystems ? "Stop All" : "Delete All";
-            UpdateColors();
+            buttonData.effectNameText.text = "<line-height=80%>" + effectName;
+            UpdateButtonAppearance();
+            UpdateStopLocalEffectsText();
             SetActiveCountText();
         }
 
@@ -392,6 +437,9 @@ When this is true said second rotation is random."
             var newActiveEffects = new bool[newLength];
             ActiveEffects.CopyTo(newActiveEffects, 0);
             ActiveEffects = newActiveEffects;
+            var newPlacedByLocalPlayer = new bool[newLength];
+            LastActionWasByLocalPlayer.CopyTo(newPlacedByLocalPlayer, 0);
+            LastActionWasByLocalPlayer = newPlacedByLocalPlayer;
             var newLastPerformedActions = new byte[newLength];
             lastPerformedActions.CopyTo(newLastPerformedActions, 0);
             lastPerformedActions = newLastPerformedActions;
@@ -475,10 +523,10 @@ When this is true said second rotation is random."
             return result;
         }
 
-        public int PlayEffect(Vector3 position, Quaternion rotation, bool ignoreRandomization)
+        public int PlayEffect(Vector3 position, Quaternion rotation, bool isManualPlacement)
         {
-            Debug.Log($"<dlt> PlayEffect {(ignoreRandomization ? "(collision)" : "(manual)")}");
-            if (randomizeRotation && !ignoreRandomization)
+            Debug.Log($"<dlt> PlayEffect {(isManualPlacement ? "(manual)" : "(collision)")}");
+            if (randomizeRotation && isManualPlacement)
             {
                 rotation = rotation * nextRandomRotation;
                 nextRandomRotation = Quaternion.AngleAxis(Random.Range(0f, 360f), Vector3.forward);
@@ -501,15 +549,17 @@ When this is true said second rotation is random."
             }
             PlayEffectInternal(index, position, rotation);
             RequestSyncForIndex(index);
+            if (isManualPlacement)
+                SetLastActionWasByLocalPlayer(index, true);
             return index;
         }
 
-        public void StopAllEffects()
+        public void StopAllEffects(bool onlyLocal)
         {
             if (ActiveCount == 0)
                 return;
             for (int i = 0; i < MaxCount; i++)
-                if (ActiveEffects[i])
+                if (ActiveEffects[i] && (!onlyLocal || LastActionWasByLocalPlayer[i]))
                 {
                     if (IsToggle)
                         StopToggleEffect(i);
@@ -529,6 +579,7 @@ When this is true said second rotation is random."
         private void StopToggleEffectInternal(int index)
         {
             lastPerformedActions[index] = DeleteActionType;
+            SetLastActionWasByLocalPlayer(index, false);
             if (!ActiveEffects[index])
                 return;
             ActiveEffects[index] = false;
@@ -550,6 +601,7 @@ When this is true said second rotation is random."
         {
             var effectTransform = GetEffectAtIndex(index);
             lastPerformedActions[index] = PlaceActionType;
+            SetLastActionWasByLocalPlayer(index, false);
             if (ActiveEffects[index])
                 return;
             ActiveCount++;
@@ -750,7 +802,7 @@ When this is true said second rotation is random."
 
             for (int i = 0; i < delayedCount; i++)
             {
-                int effectIndex = PlayEffect(delayedPositions[i], delayedRotations[i], true);
+                int effectIndex = PlayEffect(delayedPositions[i], delayedRotations[i], false);
                 lastPerformedActions[effectIndex] = PlaceOrEditActionType;
             }
             delayedCount = 0;
@@ -843,6 +895,7 @@ When this is true said second rotation is random."
             if ((actionType & EditActionType) != 0 && ActiveEffects[effectIndex])
             {
                 lastPerformedActions[effectIndex] = EditActionType;
+                SetLastActionWasByLocalPlayer(index, false);
                 if (orderCollision)
                 {
                     // handle edit collisions, including for `PlaceOrEditActionType` actions by simply marking this effect for sync again

@@ -120,6 +120,7 @@ alright, so, a list for 0.4.0, the quality of life update:
 - [x] clean up gun assignment
 - [x] delete any effect (with a collider) in delete mode, not just selected effects (maybe there is something smart to be done about loop effects so we don't have to iterate all active ones)
 - [x] Q picking like Factorio (desktop only for now)
+  - [ ] maybe add some text somewhere which has the currently highlighted effect name?
 - [x] highlight to know what you're about to Q pick (also desktop only for now)
 - [ ] support colliders for non obj effects
 - [ ] support mesh renderers for non obj effects to have a "preview" (?)
@@ -131,18 +132,18 @@ alright, so, a list for 0.4.0, the quality of life update:
 - [ ] change effect buttons to toggles with toggle groups
 - [x] remove button prefab, put the original button in the grid already and disable it
 - [x] disable pickup collider while the gun is held in the unity play mode because god it's annoying
-- [ ] add local vs global effect management
-  - [ ] 2 delete everything buttons - "delete mine" and "delete everyone's"
-  - [ ] 2 stop/delete all buttons per effect, again one for "mine" and one for "every"
-  - [ ] 2 counts per effect
-  - [ ] 2 counts for total effects
-    - [ ] include these counts in the confirmation UI
+- [x] add local vs global effect management
+  - [x] 2 delete everything buttons - "delete mine" and "delete everyone's"
+  - [x] 2 stop/delete all buttons per effect, again one for "mine" and one for "every"
+  - [x] 2 counts per effect
+  - [x] 2 counts for total effects
+    - [x] ~~include these counts in the confirmation UI~~ decided against this, the counts already are in the buttons
 
 maybe:
 
 - [ ] show inlay hints for key binds when the UI is open for desktop users
 
-I decided against toggling between just modifying stuff placed by the local player or literally everything because it would require syncing a 32 bit integer for every effect just for that which I consider to be a big waste. It's possible but for now I'll just leave it out.
+I decided against toggling between just modifying stuff placed by the local player or literally everything ~~because it would require syncing a 32 bit integer for every effect just for that which I consider to be a big waste. It's possible but for now I'll just leave it out.~~ Incorrect, I've just implemented it without any syncing which means when somebody leaves and comes back they no longer "own" any effects (not like they ever really own effects with the current implementation, but it at least knows "the local player placed this"). This also means that network racing makes the system loose track of the local player having placed an effect, but that's just how it is. There really isn't much to be done about that. Nothing reasonable anyway.
 
 # Version 0.5.0
 

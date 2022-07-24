@@ -76,6 +76,10 @@ namespace JanSharp
         [SerializeField] public Material placePreviewMaterial;
         [SerializeField] public Material deletePreviewMaterial;
         [SerializeField] public Material highlightMaterial;
+        [SerializeField] private TextMeshProUGUI deleteEverythingLocalText;
+        [SerializeField] private TextMeshProUGUI deleteEverythingGlobalText;
+        [SerializeField] private TextMeshProUGUI confirmationTitle;
+        [SerializeField] private TextMeshProUGUI confirmationDescription;
 
         // set OnBuild
         [SerializeField] [HideInInspector] private MeshRenderer[] gunMeshRenderers;
@@ -199,6 +203,28 @@ namespace JanSharp
             }
         }
         private Color GetCurrentModeColor() => GetModeColor(Mode);
+
+        private int totalLocalActiveToggleCount;
+        public int TotalLocalActiveToggleCount
+        {
+            get => totalLocalActiveToggleCount;
+            set
+            {
+                totalLocalActiveToggleCount = value;
+                deleteEverythingLocalText.text = $"Delete{(value == 1 ? "" : " all")} <u>my</u>\n{value} effect{(value == 1 ? "" : "s")}";
+            }
+        }
+
+        private int totalGlobalActiveToggleCount;
+        public int TotalGlobalActiveToggleCount
+        {
+            get => totalGlobalActiveToggleCount;
+            set
+            {
+                totalGlobalActiveToggleCount = value;
+                deleteEverythingGlobalText.text = $"Delete every effect ({value})";
+            }
+        }
 
         // for UpdateManager
         private int customUpdateInternalIndex;
@@ -647,14 +673,54 @@ namespace JanSharp
                 CloseUI();
         }
 
-        public void DeleteEverything() => confirmationWindow.gameObject.SetActive(true);
-        public void CancelDeleteEverything() => confirmationWindow.gameObject.SetActive(false);
-        public void ConfirmDeleteEverything()
+        private UdonSharpBehaviour confirmationCallbackObj;
+        private string confirmationCallbackEventName;
+        public void OpenConfirmationWindow(string title, string description, UdonSharpBehaviour callbackObj, string callbackEventName)
+        {
+            confirmationTitle.text = title;
+            confirmationDescription.text = description;
+            confirmationCallbackObj = callbackObj;
+            confirmationCallbackEventName = callbackEventName;
+            confirmationWindow.gameObject.SetActive(true);
+        }
+        public void CancelConfirmation() => confirmationWindow.gameObject.SetActive(false);
+        public void ConfirmConfirmation()
         {
             confirmationWindow.gameObject.SetActive(false);
+            if (confirmationCallbackObj == null)
+                return;
+            confirmationCallbackObj.SendCustomEvent(confirmationCallbackEventName);
+            confirmationCallbackObj = null;
+        }
+
+        public void DeleteEverythingLocal()
+        {
+            OpenConfirmationWindow(
+                "Delete All Your Effects?",
+                "This will delete every single effect and object <u>you placed</u>.",
+                this,
+                nameof(ConfirmDeleteEverythingLocal));
+        }
+        public void ConfirmDeleteEverythingLocal()
+        {
             // TODO: spread work out across frames (probably)
             foreach (var descriptor in descriptors)
-                descriptor.StopAllEffects();
+                descriptor.StopAllEffects(true);
+        }
+
+        public void DeleteEverythingGlobal()
+        {
+            OpenConfirmationWindow(
+                "Delete All Effects?",
+                "This will delete every single effect and object <u>placed by any player</u>.",
+                this,
+                nameof(ConfirmDeleteEverythingGlobal));
+        }
+        public void ConfirmDeleteEverythingGlobal()
+        {
+            // TODO: spread work out across frames (probably)
+            foreach (var descriptor in descriptors)
+                descriptor.StopAllEffects(false);
         }
 
         public void ShowHelp() => helpWindow.gameObject.SetActive(true);
@@ -686,7 +752,7 @@ namespace JanSharp
             {
                 if (IsPlaceIndicatorActive)
                 {
-                    SelectedEffect.PlayEffect(placeIndicator.position, placeIndicator.rotation, false);
+                    SelectedEffect.PlayEffect(placeIndicator.position, placeIndicator.rotation, true);
                     IsPlaceIndicatorActive = false;
                 }
             }
