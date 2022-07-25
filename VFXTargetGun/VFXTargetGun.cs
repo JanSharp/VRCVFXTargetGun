@@ -23,7 +23,12 @@ namespace JanSharp
         [SerializeField] private Transform effectsParent;
         [SerializeField] private float maxDistance = 250f;
         // 0: Default, 4: Water, 8: Interactive, 11: Environment, 13: Pickup
-        [SerializeField] private LayerMask rayLayerMask = (1 << 0) | (1 << 4) | (1 << 8) | (1 << 11) | (1 << 13);
+        [Tooltip("Used to figure out where to place an effect.")]
+        [SerializeField] private LayerMask placeRayLayerMask = (1 << 0) | (1 << 4) | (1 << 8) | (1 << 11) | (1 << 13);
+        ///cSpell:ignore Walkthrough
+        // 0: Default, 4: Water, 8: Interactive, 11: Environment, 13: Pickup, 17: Walkthrough
+        [Tooltip("Used to figure out which effect is being pointed at/near. Should generally be the same as the Place Ray Layer Mask plus one layer which is the layer all invisible colliders for Loop effects are using. Default is Walkthrough but a custom layer may be preferable.")]
+        [SerializeField] private LayerMask targetRayLayerMask = (1 << 0) | (1 << 4) | (1 << 8) | (1 << 11) | (1 << 13) | (1 << 17);
         [SerializeField] private bool initialVisibility = false;
         private Color deselectedColor;
         [SerializeField] private Color inactiveColor = new Color(0.73725f, 0.42353f, 0.85098f);
@@ -968,7 +973,7 @@ namespace JanSharp
                 {
                     if (SelectedEffect != null)
                         SelectedEffect = null;
-                    else if (Physics.Raycast(aimPoint.position, aimPoint.forward, out hit, maxDistance, rayLayerMask.value)
+                    else if (Physics.Raycast(aimPoint.position, aimPoint.forward, out hit, maxDistance, targetRayLayerMask.value)
                         && TryGetTargetedEffect(hit))
                     {
                         SelectedEffect = outTargetedEffectDescriptor;
@@ -1009,7 +1014,8 @@ namespace JanSharp
             if (IsUserInVR && IsPlaceMode && SelectedEffect == null)
                 return;
 
-            if (Physics.Raycast(aimPoint.position, aimPoint.forward, out hit, maxDistance, rayLayerMask.value))
+            int layerMask = IsPlaceMode && SelectedEffect != null ? placeRayLayerMask.value : targetRayLayerMask.value;
+            if (Physics.Raycast(aimPoint.position, aimPoint.forward, out hit, maxDistance, layerMask))
             {
                 laser.localScale = new Vector3(1f, 1f, (aimPoint.position - hit.point).magnitude * laserBaseScale);
                 if (IsPlaceMode)

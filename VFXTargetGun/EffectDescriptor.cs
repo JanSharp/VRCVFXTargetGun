@@ -29,6 +29,7 @@ When this is true said second rotation is random."
         // set OnBuild
         [SerializeField] [HideInInspector] private float effectDuration; // used by once effects
         [SerializeField] [HideInInspector] private float effectLifetime; // used by loop effects
+        [SerializeField] [HideInInspector] private bool hasColliders; // used by loop effects
         [SerializeField] [HideInInspector] private GameObject originalEffectObject;
         [SerializeField] [HideInInspector] public Transform effectClonesParent;
         [SerializeField] [HideInInspector] public Vector3 effectLocalCenter;
@@ -343,6 +344,8 @@ When this is true said second rotation is random."
                     // that is not how a multiplier works
                 }
                 effectDuration = particleSystems[0].main.duration + effectLifetime;
+                if (IsLoop)
+                    hasColliders = effectParent.GetComponentInChildren<Collider>() != null;
             }
 
             if (IsObject)
@@ -597,6 +600,9 @@ When this is true said second rotation is random."
                 FadingOutCount++;
                 foreach (var ps in ParticleSystems[index])
                     ps.Stop();
+                if (hasColliders)
+                    foreach (Collider collider in EffectParents[index].GetComponentsInChildren<Collider>())
+                        collider.enabled = false;
                 toFinishIndexes[toFinishCount++] = index;
                 this.SendCustomEventDelayedSeconds(nameof(EffectRanOut), effectDuration);
             }
@@ -629,6 +635,12 @@ When this is true said second rotation is random."
                 {
                     toFinishIndexes[toFinishCount++] = index;
                     this.SendCustomEventDelayedSeconds(nameof(EffectRanOut), effectDuration);
+                }
+                else
+                {
+                    if (hasColliders)
+                        foreach (Collider collider in effectTransform.GetComponentsInChildren<Collider>())
+                            collider.enabled = true;
                 }
             }
         }
