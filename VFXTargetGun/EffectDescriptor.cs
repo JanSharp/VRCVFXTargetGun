@@ -222,19 +222,19 @@ When this is true said second rotation is random."
 
         private void UpdateButtonAppearance()
         {
-            // update button sprite and color
-            buttonData.button.image.sprite = Selected ? buttonData.selectedSprite : buttonData.normalSprite;
+            // update toggle and color
+            buttonData.toggle.SetIsOnWithoutNotify(Selected);
             bool active = ActiveCount != 0 || FadingOutCount != 0;
             switch (effectType)
             {
                 case LoopEffect:
-                    buttonData.button.colors = active ? gun.ActiveLoopColor : gun.InactiveLoopColor;
+                    buttonData.toggle.colors = active ? gun.ActiveLoopColor : gun.InactiveLoopColor;
                     break;
                 case ObjectEffect:
-                    buttonData.button.colors = active ? gun.ActiveObjectColor : gun.InactiveObjectColor;
+                    buttonData.toggle.colors = active ? gun.ActiveObjectColor : gun.InactiveObjectColor;
                     break;
                 default:
-                    buttonData.button.colors = active ? gun.ActiveColor : gun.InactiveColor;
+                    buttonData.toggle.colors = active ? gun.ActiveColor : gun.InactiveColor;
                     break;
             }
 

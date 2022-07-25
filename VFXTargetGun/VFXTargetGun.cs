@@ -85,6 +85,7 @@ namespace JanSharp
         [SerializeField] private TextMeshProUGUI deleteEverythingGlobalText;
         [SerializeField] private TextMeshProUGUI confirmationTitle;
         [SerializeField] private TextMeshProUGUI confirmationDescription;
+        [SerializeField] public ToggleGroup effectsToggleGroup;
 
         // set OnBuild
         [SerializeField] [HideInInspector] private MeshRenderer[] gunMeshRenderers;
@@ -268,6 +269,7 @@ namespace JanSharp
             {
                 if (value == selectedEffect)
                     return;
+                effectsToggleGroup.allowSwitchOff = value == null;
                 DeleteTargetIndex = -1; // set before changing selected effect
                 HighlightTargetIndex = -1; // set before changing selected effect
                 IsPlacePreviewActive = false; // disable before changing selected effect so the current preview gets disabled

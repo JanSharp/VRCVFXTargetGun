@@ -129,7 +129,7 @@ alright, so, a list for 0.4.0, the quality of life update:
   - [x] warn about potential oversights like only some particles being looped and some aren't (not really done but there are TODOs for it now)
 - [x] change delete everything description
 - [x] change mode buttons to toggles with toggle groups
-- [ ] change effect buttons to toggles with toggle groups
+- [x] change effect buttons to toggles with toggle groups
 - [x] remove button prefab, put the original button in the grid already and disable it
 - [x] disable pickup collider while the gun is held in the unity play mode because god it's annoying
 - [x] add local vs global effect management
