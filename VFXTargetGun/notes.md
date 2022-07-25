@@ -123,6 +123,7 @@ alright, so, a list for 0.4.0, the quality of life update:
   - [ ] maybe add some text somewhere which has the currently highlighted effect name?
 - [x] highlight to know what you're about to Q pick (also desktop only for now)
 - [x] support colliders for loop effects
+  - [ ] allow casting through loop effect colliders so that they aren't in the way when trying to delete something else
 - [ ] support mesh renderers for non obj effects to have a "preview" (?)
 - [x] add option for effect descriptors for what type of obj they are
   - [x] dropdown with default "auto"
