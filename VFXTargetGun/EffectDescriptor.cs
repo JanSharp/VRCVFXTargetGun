@@ -27,7 +27,6 @@ When this is true said second rotation is random."
         public bool randomizeRotation;
 
         // set OnBuild
-        [SerializeField] [HideInInspector] private int effectType;
         [SerializeField] [HideInInspector] private float effectDuration; // used by once effects
         [SerializeField] [HideInInspector] private float effectLifetime; // used by loop effects
         [SerializeField] [HideInInspector] private GameObject originalEffectObject;
@@ -40,9 +39,13 @@ When this is true said second rotation is random."
         [SerializeField] [HideInInspector] private int index;
         public int Index => index;
 
-        private const int OnceEffect = 0;
-        private const int LoopEffect = 1;
-        private const int ObjectEffect = 2;
+        // set in custom inspector
+        [SerializeField] [HideInInspector] public int effectType; // also set OnBuild
+        [SerializeField] [HideInInspector] public int selectedEffectType;
+
+        public const int OnceEffect = 0;
+        public const int LoopEffect = 1;
+        public const int ObjectEffect = 2;
         public int EffectType => effectType;
         public bool IsOnce => effectType == OnceEffect;
         public bool IsLoop => effectType == LoopEffect;
@@ -298,17 +301,21 @@ When this is true said second rotation is random."
             var particleSystems = effectParent.GetComponentsInChildren<ParticleSystem>();
             effectDuration = 0f;
             if (particleSystems.Length == 0)
-                effectType = ObjectEffect;
+            {
+                if (selectedEffectType == 0)
+                    effectType = ObjectEffect;
+            }
             else
             {
-                effectType = OnceEffect;
+                if (selectedEffectType == 0)
+                    effectType = OnceEffect;
                 foreach (var particleSystem in particleSystems)
                 {
                     var main = particleSystem.main;
                     if (main.playOnAwake) // NOTE: this warning is nice and all but it instantly gets cleared if clear on play is enabled
                         Debug.LogWarning($"Particle System '{particleSystem.name}' is playing on awake which is "
                             + $"most likely undesired. (effect obj '{this.name}', effect name '{this.effectName}')");
-                    if (main.loop)
+                    if (main.loop && selectedEffectType == 0)
                         effectType = LoopEffect;
                     float lifetime;
                     switch (main.startLifetime.mode)
@@ -919,4 +926,80 @@ When this is true said second rotation is random."
             delayedRotations = newDelayedRotations;
         }
     }
+
+    #if UNITY_EDITOR && !COMPILER_UDONSHARP
+    [CustomEditor(typeof(EffectDescriptor))]
+    public class EffectDescriptorEditor : Editor
+    {
+        private static string[] EffectTypes = new string[]
+        {
+            "Auto",
+            "Once",
+            "Loop",
+            "Object",
+        };
+
+        public override void OnInspectorGUI()
+        {
+            EffectDescriptor target = this.target as EffectDescriptor;
+            if (UdonSharpGUI.DrawDefaultUdonSharpBehaviourHeader(target))
+                return;
+            EditorGUILayout.Space();
+            base.OnInspectorGUI(); // draws public/serializable fields
+            EffectTypes[0] = target.selectedEffectType == 0 ? $"Auto ({EffectTypes[target.effectType + 1]})" : "Auto";
+            int newSelection = EditorGUILayout.Popup(
+                new GUIContent("Effect Type", "This can be used to force the EffectDescriptor to be of a specific type"
+                    + " which is only really useful for ensuring the EffectParent is setup correctly."
+                    + " The only time where Auto won't determine the correct type is if it should be an Object effect"
+                    + " but it has some particle system in it. In this case the Effect Type has to be set to Object manually."
+                    + "\n\nNote that when this is Auto and it has an effect type in () then said Effect Type only updates"
+                    + " whenever the dropdown is changed again, play mode is entered or the world is published."),
+                target.selectedEffectType,
+                EffectTypes);
+            if (newSelection != target.selectedEffectType)
+            {
+                target.selectedEffectType = newSelection;
+                if (newSelection != 0)
+                {
+                    target.effectType = newSelection - 1;
+                    // TODO: validate particle systems
+                }
+                else if (target.transform.childCount == 0)
+                {
+                    // TODO: change this to be a warning in the inspector instead
+                    Debug.LogError("Unable to automatically determine the Effect Type because the EffectDescriptor doesn't have any children."
+                        + " The first child must be the 'EffectParent' which is either the parent for a collection of particle systems,"
+                        + " or the parent for an object. It is considered to be an object whenever there are no particle systems"
+                        + " and if any particle system is looped the it is considered to be a loop effect."
+                        + " Warnings are emitted in unclear scenarios.", target);
+                }
+                else
+                {
+                    Transform effectParent = target.transform.GetChild(0);
+                    var particleSystems = effectParent.GetComponentsInChildren<ParticleSystem>();
+                    if (particleSystems.Length == 0)
+                        target.effectType = EffectDescriptor.ObjectEffect;
+                    else
+                    {
+                        if (!particleSystems.Any(ps => ps.main.loop))
+                            target.effectType = EffectDescriptor.OnceEffect;
+                        else
+                        {
+                            target.effectType = EffectDescriptor.LoopEffect;
+                            // TODO: add this warning here as well
+                            // if (main.playOnAwake) // NOTE: this warning is nice and all but it instantly gets cleared if clear on play is enabled
+                            //     Debug.LogWarning($"Particle System '{particleSystem.name}' is playing on awake which is "
+                            //         + $"most likely undesired. (effect obj '{this.name}', effect name '{this.effectName}')");
+                            if (particleSystems.Any(ps => !ps.main.loop))
+                            {
+                                GUILayout.Label("Some particle systems are looping while some aren't.\nThis may be unintentional.");
+                            }
+                        }
+                    }
+                }
+                EditorUtility.SetDirty(target);
+            }
+        }
+    }
+    #endif
 }

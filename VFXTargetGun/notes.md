@@ -124,9 +124,9 @@ alright, so, a list for 0.4.0, the quality of life update:
 - [x] highlight to know what you're about to Q pick (also desktop only for now)
 - [ ] support colliders for non obj effects
 - [ ] support mesh renderers for non obj effects to have a "preview" (?)
-- [ ] add option for effect descriptors for what type of obj they are
-  - [ ] dropdown with default "auto"
-  - [ ] warn about potential oversights like only some particles being looped and some aren't
+- [x] add option for effect descriptors for what type of obj they are
+  - [x] dropdown with default "auto"
+  - [x] warn about potential oversights like only some particles being looped and some aren't (not really done but there are TODOs for it now)
 - [x] change delete everything description
 - [x] change mode buttons to toggles with toggle groups
 - [ ] change effect buttons to toggles with toggle groups
