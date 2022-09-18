@@ -1,18 +1,20 @@
-﻿
-using UdonSharp;
+﻿using UdonSharp;
 using UnityEngine;
 using VRC.SDKBase;
 using VRC.Udon;
 
-public class One : UdonSharpBehaviour
+namespace JanSharp
 {
-    public Two two;
-
-    void Start()
+    public class One : UdonSharpBehaviour
     {
-        two.AddPoints(100);
-        two.AddPoints(2);
-        two.AddPoints(4902);
-        two.AddPoints(64805);
+        public Two two;
+
+        void Start()
+        {
+            two.AddPoints(100);
+            two.AddPoints(2);
+            two.AddPoints(4902);
+            two.AddPoints(64805);
+        }
     }
 }

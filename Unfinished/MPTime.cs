@@ -1,23 +1,25 @@
-﻿
-using UdonSharp;
+﻿using UdonSharp;
 using UnityEngine;
 using VRC.SDKBase;
 using VRC.Udon;
 using TMPro;
 using VRC.Udon.Common.Interfaces;
 
-public class MPTime : UdonSharpBehaviour
+namespace JanSharp
 {
-    [SerializeField]
-    TextMeshPro text;
-
-    public override void Interact()
+    public class MPTime : UdonSharpBehaviour
     {
-        SendCustomNetworkEvent(NetworkEventTarget.All, nameof(PrintTime));
-    }
+        [SerializeField]
+        TextMeshPro text;
 
-    public void PrintTime()
-    {
-        text.text = Time.fixedTime.ToString();
+        public override void Interact()
+        {
+            SendCustomNetworkEvent(NetworkEventTarget.All, nameof(PrintTime));
+        }
+
+        public void PrintTime()
+        {
+            text.text = Time.fixedTime.ToString();
+        }
     }
 }

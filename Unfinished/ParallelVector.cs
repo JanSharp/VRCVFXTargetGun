@@ -3,12 +3,15 @@ using UnityEngine;
 using VRC.SDKBase;
 using VRC.Udon;
 
-public class ParallelVector : UdonSharpBehaviour
+namespace JanSharp
 {
-    public Transform target;
-
-    void Update()
+    public class ParallelVector : UdonSharpBehaviour
     {
-        // transform.position = 
+        public Transform target;
+
+        void Update()
+        {
+            // transform.position = 
+        }
     }
 }

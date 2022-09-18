@@ -1,27 +1,29 @@
-﻿
-using UdonSharp;
+﻿using UdonSharp;
 using UnityEngine;
 using VRC.SDKBase;
 using VRC.Udon;
 using TMPro;
 
-public class Two : UdonSharpBehaviour
+namespace JanSharp
 {
-    [FieldChangeCallback(nameof(OnChangePointTotal))] // mark it for on change
-    private int pointTotal;
-    private int OnChangePointTotal
+    public class Two : UdonSharpBehaviour
     {
-        set
+        [FieldChangeCallback(nameof(OnChangePointTotal))] // mark it for on change
+        private int pointTotal;
+        private int OnChangePointTotal
         {
-            textObj.text = value.ToString();
-            pointTotal = value;
+            set
+            {
+                textObj.text = value.ToString();
+                pointTotal = value;
+            }
         }
-    }
 
-    public TextMeshPro textObj;
+        public TextMeshPro textObj;
 
-    public void AddPoints(int toAdd)
-    {
-        SetProgramVariable(nameof(pointTotal), pointTotal + toAdd);
+        public void AddPoints(int toAdd)
+        {
+            SetProgramVariable(nameof(pointTotal), pointTotal + toAdd);
+        }
     }
 }

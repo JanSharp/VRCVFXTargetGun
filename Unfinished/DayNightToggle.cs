@@ -1,59 +1,61 @@
-﻿
-using UdonSharp;
+﻿using UdonSharp;
 using UnityEngine;
 using VRC.SDKBase;
 using VRC.Udon;
 
-public class DayNightToggle : UdonSharpBehaviour
+namespace JanSharp
 {
-    public float dayStuff;
-    
-    public float nightStuff;
-
-    [UdonSynced]
-    [FieldChangeCallback(nameof(isNightState))]
-    private bool isNightStateInternal = false;
-
-    private bool isNightState
+    public class DayNightToggle : UdonSharpBehaviour
     {
-        get
+        public float dayStuff;
+        
+        public float nightStuff;
+
+        [UdonSynced]
+        [FieldChangeCallback(nameof(isNightState))]
+        private bool isNightStateInternal = false;
+
+        private bool isNightState
         {
-            return isNightStateInternal;
-        }
-        set
-        {
-            bool oldValue = isNightStateInternal;
-            isNightStateInternal = value;
-            if (oldValue != value)
+            get
             {
-                SkyChange();
+                return isNightStateInternal;
+            }
+            set
+            {
+                bool oldValue = isNightStateInternal;
+                isNightStateInternal = value;
+                if (oldValue != value)
+                {
+                    SkyChange();
+                }
             }
         }
-    }
 
-    public void ToggleDay()
-    {
-        Networking.SetOwner(Networking.LocalPlayer, this.gameObject);
-        isNightState = false;
-        RequestSerialization();
-    }
-
-    public void ToggleNight()
-    {
-        Networking.SetOwner(Networking.LocalPlayer, this.gameObject);
-        isNightState = true;
-        RequestSerialization();
-    }
-
-    public void SkyChange()
-    {
-        if (isNightStateInternal)
+        public void ToggleDay()
         {
-            RenderSettings.fogDensity = dayStuff;
+            Networking.SetOwner(Networking.LocalPlayer, this.gameObject);
+            isNightState = false;
+            RequestSerialization();
         }
-        else
+
+        public void ToggleNight()
         {
-            RenderSettings.fogDensity = nightStuff;
+            Networking.SetOwner(Networking.LocalPlayer, this.gameObject);
+            isNightState = true;
+            RequestSerialization();
+        }
+
+        public void SkyChange()
+        {
+            if (isNightStateInternal)
+            {
+                RenderSettings.fogDensity = dayStuff;
+            }
+            else
+            {
+                RenderSettings.fogDensity = nightStuff;
+            }
         }
     }
 }

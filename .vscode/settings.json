@@ -19,6 +19,9 @@
     "UDONSHARP",
     "UGUI"
   ],
+  "cSpell.ignoreRegExpList": [
+    "0[xX][a-fA-F0-9]+",
+  ],
   "explorer.fileNesting.enabled": true,
   "explorer.fileNesting.expand": false,
   "explorer.fileNesting.patterns": {

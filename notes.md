@@ -35,3 +35,57 @@ removing:
 $1
 
 ```
+
+# Syncing
+
+object associated - intended use
+player associated - not at all (tags that I didn't check out yet)
+
+state syncing - intended use
+event syncing - intended use
+parameterized event syncing - not intended use, but workable
+incremental syncing - syncing hell
+
+# Joystick KeyCodes
+
+index controllers:
+
+left a
+JoystickButton3
+Joystick1Button3
+
+right a
+JoystickButton1
+Joystick2Button1
+
+left b
+JoystickButton2
+Joystick1Button2
+
+right b
+JoystickButton0
+Joystick2Button0
+
+left squeeze
+JoystickButton4
+Joystick1Button4
+
+right squeeze
+JoystickButton5
+Joystick2Button5
+
+left trigger
+JoystickButton14
+Joystick1Button14
+
+right trigger
+JoystickButton15
+Joystick2Button15
+
+left joystick down
+JoystickButton8
+Joystick1Button8
+
+right joystick down
+JoystickButton9
+Joystick2Button9

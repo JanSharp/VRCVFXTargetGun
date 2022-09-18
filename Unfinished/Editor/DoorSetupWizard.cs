@@ -3,23 +3,26 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 
-public class DoorSetupWizard : ScriptableWizard
+namespace JanSharp
 {
-    public GameObject thing;
-
-    [MenuItem("CustomVRC/Create Door Teleport...")]
-    static void CreateWizard()
+    public class DoorSetupWizard : ScriptableWizard
     {
-        ScriptableWizard.DisplayWizard<DoorSetupWizard>("Create Door Teleport", "Finish");
+        public GameObject thing;
+
+        [MenuItem("CustomVRC/Create Door Teleport...")]
+        static void CreateWizard()
+        {
+            ScriptableWizard.DisplayWizard<DoorSetupWizard>("Create Door Teleport", "Finish");
+        }
+
+        void OnWizardCreate()
+        {
+
+        }
+
+        // void OnWizardUpdate()
+        // {
+        //     isValid = false;
+        // }
     }
-
-    void OnWizardCreate()
-    {
-
-    }
-
-    // void OnWizardUpdate()
-    // {
-    //     isValid = false;
-    // }
 }

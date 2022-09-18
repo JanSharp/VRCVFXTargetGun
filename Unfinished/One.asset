@@ -62,7 +62,7 @@ MonoBehaviour:
       Data: 4|System.RuntimeType, mscorlib
     - Name: 
       Entry: 1
-      Data: Two, Assembly-CSharp
+      Data: JanSharp.Two, Assembly-CSharp
     - Name: 
       Entry: 8
       Data: 

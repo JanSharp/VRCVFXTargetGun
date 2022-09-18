@@ -1,17 +1,19 @@
-﻿
-using UdonSharp;
+﻿using UdonSharp;
 using UnityEngine;
 using VRC.SDKBase;
 using VRC.Udon;
 
-[UdonBehaviourSyncMode(BehaviourSyncMode.Manual)]
-public class PointToTransform : UdonSharpBehaviour
+namespace JanSharp
 {
-    public Transform target;
-    public void Update()
+    [UdonBehaviourSyncMode(BehaviourSyncMode.Manual)]
+    public class PointToTransform : UdonSharpBehaviour
     {
-        var dir = target.transform.position - this.transform.position;
-        dir.y = 0;
-        this.transform.rotation = Quaternion.LookRotation(dir);
+        public Transform target;
+        public void Update()
+        {
+            var dir = target.transform.position - this.transform.position;
+            dir.y = 0;
+            this.transform.rotation = Quaternion.LookRotation(dir);
+        }
     }
 }

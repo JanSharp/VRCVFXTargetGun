@@ -62,7 +62,7 @@ MonoBehaviour:
       Data: 4|System.RuntimeType, mscorlib
     - Name: 
       Entry: 1
-      Data: MusicDescriptor[], Assembly-CSharp
+      Data: JanSharp.MusicDescriptor[], Assembly-CSharp
     - Name: 
       Entry: 8
       Data: 
@@ -125,7 +125,7 @@ MonoBehaviour:
       Data: 8|System.RuntimeType, mscorlib
     - Name: 
       Entry: 1
-      Data: MusicDescriptor, Assembly-CSharp
+      Data: JanSharp.MusicDescriptor, Assembly-CSharp
     - Name: 
       Entry: 8
       Data: 

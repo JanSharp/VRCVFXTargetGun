@@ -3,57 +3,60 @@ using UnityEngine;
 using VRC.SDKBase;
 using VRC.Udon;
 
-[UdonBehaviourSyncMode(BehaviourSyncMode.None)]
-public class UpdateManager : UdonSharpBehaviour
+namespace JanSharp
 {
-    private const string InternalIndexFieldName = "customUpdateInternalIndex";
-    private const string CustomUpdateMethodName = "CustomUpdate";
-    private const int InitialListenersLength = 128;
-
-    // can't use UdonBehaviour nor UdonSharpBehaviour arrays because it's not supported
-    private Component[] listeners = new Component[InitialListenersLength];
-    private int listenerCount = 0;
-
-    private void Update()
+    [UdonBehaviourSyncMode(BehaviourSyncMode.None)]
+    public class UpdateManager : UdonSharpBehaviour
     {
-        for (int i = 0; i < listenerCount; i++)
+        private const string InternalIndexFieldName = "customUpdateInternalIndex";
+        private const string CustomUpdateMethodName = "CustomUpdate";
+        private const int InitialListenersLength = 128;
+
+        // can't use UdonBehaviour nor UdonSharpBehaviour arrays because it's not supported
+        private Component[] listeners = new Component[InitialListenersLength];
+        private int listenerCount = 0;
+
+        private void Update()
         {
-            ((UdonSharpBehaviour)listeners[i]).SendCustomEvent(CustomUpdateMethodName);
+            for (int i = 0; i < listenerCount; i++)
+            {
+                ((UdonSharpBehaviour)listeners[i]).SendCustomEvent(CustomUpdateMethodName);
+            }
         }
-    }
 
-    public void Register(UdonSharpBehaviour listener)
-    {
-        if ((int)listener.GetProgramVariable(InternalIndexFieldName) != 0)
-            return;
-        if (listenerCount == listeners.Length)
-            GrowListeners();
-        listeners[listenerCount] = listener;
-        listener.SetProgramVariable(InternalIndexFieldName, listenerCount + 1);
-        listenerCount++;
-    }
-
-    public void Deregister(UdonSharpBehaviour listener)
-    {
-        int index = (int)listener.GetProgramVariable(InternalIndexFieldName) - 1;
-        if (index == -1)
-            return;
-        listener.SetProgramVariable(InternalIndexFieldName, 0);
-        // move current top into the gap
-        listenerCount--;
-        if (index != listenerCount)
+        public void Register(UdonSharpBehaviour listener)
         {
-            listeners[index] = listeners[listenerCount];
-            ((UdonSharpBehaviour)listeners[index]).SetProgramVariable(InternalIndexFieldName, index + 1);
+            if ((int)listener.GetProgramVariable(InternalIndexFieldName) != 0)
+                return;
+            if (listenerCount == listeners.Length)
+                GrowListeners();
+            listeners[listenerCount] = listener;
+            listener.SetProgramVariable(InternalIndexFieldName, listenerCount + 1);
+            listenerCount++;
         }
-        listeners[listenerCount] = null;
-    }
 
-    private void GrowListeners()
-    {
-        Component[] grownListeners = new Component[listeners.Length * 2];
-        for (int i = 0; i < listeners.Length; i++)
-            grownListeners[i] = listeners[i];
-        listeners = grownListeners;
+        public void Deregister(UdonSharpBehaviour listener)
+        {
+            int index = (int)listener.GetProgramVariable(InternalIndexFieldName) - 1;
+            if (index == -1)
+                return;
+            listener.SetProgramVariable(InternalIndexFieldName, 0);
+            // move current top into the gap
+            listenerCount--;
+            if (index != listenerCount)
+            {
+                listeners[index] = listeners[listenerCount];
+                ((UdonSharpBehaviour)listeners[index]).SetProgramVariable(InternalIndexFieldName, index + 1);
+            }
+            listeners[listenerCount] = null;
+        }
+
+        private void GrowListeners()
+        {
+            Component[] grownListeners = new Component[listeners.Length * 2];
+            for (int i = 0; i < listeners.Length; i++)
+                grownListeners[i] = listeners[i];
+            listeners = grownListeners;
+        }
     }
 }

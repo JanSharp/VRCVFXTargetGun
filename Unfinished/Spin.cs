@@ -1,13 +1,15 @@
-﻿
-using UdonSharp;
+﻿using UdonSharp;
 using UnityEngine;
 using VRC.SDKBase;
 using VRC.Udon;
 
-public class Spin : UdonSharpBehaviour
+namespace JanSharp
 {
-    void Update()
+    public class Spin : UdonSharpBehaviour
     {
-        transform.Rotate(Vector3.up, Time.deltaTime * 50f);
+        void Update()
+        {
+            transform.Rotate(Vector3.up, Time.deltaTime * 50f);
+        }
     }
 }

@@ -1484,7 +1484,7 @@ MonoBehaviour:
       Data: 91|System.RuntimeType, mscorlib
     - Name: 
       Entry: 1
-      Data: ItemSync[], Assembly-CSharp
+      Data: JanSharp.ItemSync[], Assembly-CSharp
     - Name: 
       Entry: 8
       Data: 

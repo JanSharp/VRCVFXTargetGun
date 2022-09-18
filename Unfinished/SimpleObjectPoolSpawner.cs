@@ -1,16 +1,18 @@
-﻿
-using UdonSharp;
+﻿using UdonSharp;
 using UnityEngine;
 using VRC.SDKBase;
 using VRC.Udon;
 
-public class SimpleObjectPoolSpawner : UdonSharpBehaviour
+namespace JanSharp
 {
-    public SimpleObjectPool objectPool;
+    public class SimpleObjectPoolSpawner : UdonSharpBehaviour
+    {
+        public SimpleObjectPool objectPool;
 
-    // public override void Interact()
-    // {
-    //     Networking.SetOwner(Networking.LocalPlayer, objectPool.gameObject);
-    //     objectPool.TryToSpawn();
-    // }
+        // public override void Interact()
+        // {
+        //     Networking.SetOwner(Networking.LocalPlayer, objectPool.gameObject);
+        //     objectPool.TryToSpawn();
+        // }
+    }
 }

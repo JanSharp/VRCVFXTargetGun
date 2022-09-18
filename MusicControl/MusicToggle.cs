@@ -3,19 +3,24 @@ using UnityEngine;
 using VRC.SDKBase;
 using VRC.Udon;
 
-[UdonBehaviourSyncMode(BehaviourSyncMode.None)]
-public class MusicToggle : UdonSharpBehaviour
+namespace JanSharp
 {
-    public MusicDescriptor musicForThisArea;
-    private uint id;
-
-    public override void OnPlayerTriggerEnter(VRCPlayerApi player)
+    [UdonBehaviourSyncMode(BehaviourSyncMode.None)]
+    public class MusicToggle : UdonSharpBehaviour
     {
-        id = musicForThisArea.AddThisMusic();
-    }
+        public MusicDescriptor musicForThisArea;
+        private uint id;
 
-    public override void OnPlayerTriggerExit(VRCPlayerApi player)
-    {
-        musicForThisArea.Manager.RemoveMusic(id);
+        public override void OnPlayerTriggerEnter(VRCPlayerApi player)
+        {
+            if (player.isLocal)
+                id = musicForThisArea.AddThisMusic();
+        }
+
+        public override void OnPlayerTriggerExit(VRCPlayerApi player)
+        {
+            if (player.isLocal)
+                musicForThisArea.Manager.RemoveMusic(id);
+        }
     }
 }
