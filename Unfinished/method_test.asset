@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4f11136daadff0b44ac2278a314682ab, type: 3}
   m_Name: method_test
   m_EditorClassIdentifier: 
-  serializedUdonProgramAsset: {fileID: 11400000, guid: dbba5a6fc426244eda0fa7bd1a5f475c,
+  serializedUdonProgramAsset: {fileID: 11400000, guid: a34fb31b16210b9f380829ef7a458da9,
     type: 2}
   udonAssembly: ".data_start\n\n    \n    __Boolean_0: %SystemBoolean, null\n   
     __instance_0: %VRCUdonUdonBehaviour, this\n    __eventName_0: %SystemString,
@@ -118,8 +118,5 @@ MonoBehaviour:
         stringValue: System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|1
     updateOrder: 0
   graphElementData: []
-  viewTransform:
-    position: {x: 30, y: 429}
-    scale: 0.94186044
   version: 1.0.0
   showAssembly: 1

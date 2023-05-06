@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4f11136daadff0b44ac2278a314682ab, type: 3}
   m_Name: remove_code_duplication
   m_EditorClassIdentifier: 
-  serializedUdonProgramAsset: {fileID: 11400000, guid: e8a99ddb762dabc88bbde0ca350d7d21,
+  serializedUdonProgramAsset: {fileID: 11400000, guid: 8d65649fb9a400fee9f191ca9b1fd53b,
     type: 2}
   udonAssembly: ".data_start\n\n    \n\n.data_end\n\n.code_start\n\n\n.code_end\n"
   assemblyError: 
@@ -84,8 +84,5 @@ MonoBehaviour:
       nodeValues: []
     updateOrder: 0
   graphElementData: []
-  viewTransform:
-    position: {x: 91, y: 189}
-    scale: 0.65751624
   version: 1.0.0
   showAssembly: 0

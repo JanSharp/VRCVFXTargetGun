@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4f11136daadff0b44ac2278a314682ab, type: 3}
   m_Name: New Udon Graph Program Asset
   m_EditorClassIdentifier: 
-  serializedUdonProgramAsset: {fileID: 11400000, guid: 6921f59c3c1f46be3a1655301615f7cc,
+  serializedUdonProgramAsset: {fileID: 11400000, guid: 39d9cc955f30a7a34a3de727ba37caa3,
     type: 2}
   udonAssembly: ".data_start\n\n    \n    randomValue: %SystemInt32, null\n\n.data_end\n\n.code_start\n\n\n.code_end\n"
   assemblyError: 
@@ -392,8 +392,5 @@ MonoBehaviour:
   - type: 5
     uid: 68c06abe-e735-43ab-9636-3b71a5c6306a
     jsonData: '{"visible":true,"layout":{"serializedVersion":"2","x":10.0,"y":129.0,"width":200.0,"height":150.0}}'
-  viewTransform:
-    position: {x: -974, y: -1119}
-    scale: 1
   version: 1.0.0
   showAssembly: 0

@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4f11136daadff0b44ac2278a314682ab, type: 3}
   m_Name: TestGraph
   m_EditorClassIdentifier: 
-  serializedUdonProgramAsset: {fileID: 11400000, guid: e314471bf6408e567b99786da5b01bb4,
+  serializedUdonProgramAsset: {fileID: 11400000, guid: f7c65ec70fe847b24b5919fb9a6109a8,
     type: 2}
   udonAssembly: ".data_start\n\n    .export RB\n    \n    __instance_0: %UnityEngineRigidbody,
     null\n    __value_0: %UnityEngineVector3, null\n    __Single_0: %SystemSingle,
@@ -230,8 +230,5 @@ MonoBehaviour:
   - type: 5
     uid: 3e15795a-9e3e-4cfa-88a7-24296b39ceca
     jsonData: '{"visible":true,"layout":{"serializedVersion":"2","x":10.0,"y":130.0,"width":200.0,"height":150.0}}'
-  viewTransform:
-    position: {x: 89, y: -1735}
-    scale: 2.0113573
   version: 1.0.0
   showAssembly: 0

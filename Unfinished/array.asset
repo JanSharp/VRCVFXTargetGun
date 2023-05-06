@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4f11136daadff0b44ac2278a314682ab, type: 3}
   m_Name: array
   m_EditorClassIdentifier: 
-  serializedUdonProgramAsset: {fileID: 11400000, guid: efce53b654a3ecb64bbb0cb776758e29,
+  serializedUdonProgramAsset: {fileID: 11400000, guid: 611d308f97eebbf5290e541f87f18ffa,
     type: 2}
   udonAssembly: ".data_start\n\n    .export publicArray\n    \n    __instance_0:
     %VRCUdonUdonBehaviour, this\n    __eventName_0: %SystemString, null\n    __instance_1:
@@ -510,8 +510,5 @@ MonoBehaviour:
   - type: 2
     uid: 9f3c5fe7-6058-445e-9d4b-1d4d51547bd2
     jsonData: '{"uid":"9f3c5fe7-6058-445e-9d4b-1d4d51547bd2","layout":{"serializedVersion":"2","x":738.0,"y":-328.9999694824219,"width":706.0,"height":652.0},"containedElements":["12e873bf-9364-4615-8706-7bbfb5194e8c","d92b31f8-499c-4d90-a15a-53cb98d0adad","58f1b4dc-1ca9-44c5-b261-f018567d0e86","e0e6795d-3133-42ef-807b-7b410dd2aa18","381d7cea-d4c8-4699-ac53-a86485122116","e17b0db9-ea11-4792-ab99-046ccd6bad93"],"title":"Interact","layer":0,"elementTypeColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0}}'
-  viewTransform:
-    position: {x: -3109, y: -886}
-    scale: 1.520875
   version: 1.0.0
   showAssembly: 0

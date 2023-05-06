@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4f11136daadff0b44ac2278a314682ab, type: 3}
   m_Name: spin_example
   m_EditorClassIdentifier: 
-  serializedUdonProgramAsset: {fileID: 11400000, guid: 7d8e728d28fa539e191a9102231ae30f,
+  serializedUdonProgramAsset: {fileID: 11400000, guid: 893506cc524fa6b2181cb45e8e50f60b,
     type: 2}
   udonAssembly: ".data_start\n\n    .export resultTMP\n    \n    __min_0: %SystemSingle,
     null\n    __max_0: %SystemSingle, null\n    __instance_0: %VRCUdonUdonBehaviour,
@@ -623,8 +623,5 @@ MonoBehaviour:
   - type: 2
     uid: 648d7c33-c8c7-4d4d-a32e-510e5b3177fb
     jsonData: '{"uid":"648d7c33-c8c7-4d4d-a32e-510e5b3177fb","layout":{"serializedVersion":"2","x":306.0,"y":329.0,"width":1146.0,"height":726.0},"containedElements":["cf9b8a4c-1061-4ce9-b0e1-26af027a04e0","9e191feb-8094-4d11-9964-4e5432cfac73","e89a46ad-104e-4f09-968d-5b7d412f7ab2","4212bfdc-8ea5-474c-8044-74d3576dd269","6c1f8396-f850-41ff-a660-6e4b85f95a82","93197708-0e40-4bcf-a47f-fe2ab847f1a0","3d86d43f-833f-4c36-80c2-cc4b2bece905","cff94bfe-3c14-4272-841d-40c37072bc1d","ad651d7c-4210-4d79-9623-78014c4cc01a","e7f691b9-ae08-43a7-bd89-778fd0719602","fd27b4a6-cdc2-4153-9f83-ad43f5eff90f","afe68970-f171-484f-a8a1-44c089338bd8","fcfbefd6-0203-40a6-907c-c7c330bdf00e","a66bb8ee-9cc6-4fee-a179-2cc80876682e"],"title":"SpinUpdate","layer":0,"elementTypeColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0}}'
-  viewTransform:
-    position: {x: 724, y: -785}
-    scale: 0.7561437
   version: 1.0.0
   showAssembly: 0
