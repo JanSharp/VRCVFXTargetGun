@@ -872,7 +872,7 @@ namespace JanSharp
 
         private void ProcessTab()
         {
-            if (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl))
+            if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
             {
                 if (SelectedEffect == null)
                     SelectedEffect = descriptors[descriptors.Length - 1];
