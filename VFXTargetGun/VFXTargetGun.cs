@@ -160,6 +160,19 @@ namespace JanSharp
                         laser.gameObject.SetActive(true);
                     else if (SelectedEffect == null)
                         laser.gameObject.SetActive(false);
+
+                switch (mode)
+                {
+                    case PlaceMode:
+                        placeModeToggle.SetIsOnWithoutNotify(true);
+                        break;
+                    case DeleteMode:
+                        deleteModeToggle.SetIsOnWithoutNotify(true);
+                        break;
+                    case EditMode:
+                        editModeToggle.SetIsOnWithoutNotify(true);
+                        break;
+                }
             }
         }
         public bool IsPlaceMode => Mode == PlaceMode;
