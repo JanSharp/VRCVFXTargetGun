@@ -949,6 +949,10 @@ When this is true said second rotation is random."
             descriptor.gun = gun;
             descriptor.orderSync = gun.OrderSync;
             descriptor.index = index;
+
+            if (PrefabUtility.IsPartOfPrefabInstance(descriptor))
+                PrefabUtility.RecordPrefabInstancePropertyModifications(descriptor);
+
         }
 
         static EffectDescriptorOnBuild() => JanSharp.OnBuildUtil.RegisterType<EffectDescriptor>(OnBuild);
@@ -1055,6 +1059,10 @@ When this is true said second rotation is random."
                 descriptor.effectScale = Vector3.one;
                 descriptor.doLimitDistance = false;
             }
+
+            if (PrefabUtility.IsPartOfPrefabInstance(descriptor))
+                PrefabUtility.RecordPrefabInstancePropertyModifications(descriptor);
+
             return true;
         }
     }

@@ -1090,6 +1090,10 @@ namespace JanSharp
                     EffectDescriptorOnBuild.InitAtBuildTime(descriptor, vfxTargetGun, i);
             }
             vfxTargetGun.laserBaseScale = vfxTargetGun.laser.localScale.z;
+
+            if (PrefabUtility.IsPartOfPrefabInstance(vfxTargetGun))
+                PrefabUtility.RecordPrefabInstancePropertyModifications(vfxTargetGun);
+
             return result;
         }
     }
