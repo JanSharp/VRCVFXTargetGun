@@ -34,33 +34,26 @@ namespace JanSharp
                 RunOnBuild();
         }
 
-        public static void RegisterType<T>(int order = 0) where T : IOnBuildCallback
+        public static void RegisterType<T>(Func<UdonSharpBehaviour, bool> callback, int order = 0) where T : UdonSharpBehaviour
         {
-            RegisterTypeInternal(typeof(T), order, false);
-        }
-
-        public static void RegisterTypeV2<T>(int order = 0) where T : IOnBuildCallbackV2
-        {
-            RegisterTypeInternal(typeof(T), order, true);
-        }
-
-        private static void RegisterTypeInternal(Type type, int order, bool usesV2)
-        {
+            Type type = typeof(T);
             OnBuildCallbackData data;
             if (typesToLookFor.TryGetValue(type, out data))
             {
-                if (!data.allOrders.Contains(order))
+                if (data.allOrders.Contains(order))
                 {
-                    data.allOrders.Add(order);
-                    typesToLookForList.Add(new OrderedOnBuildCallbackData(data, order));
+                    UnityEngine.Debug.LogError($"Attempt to register the same UdonSharpBehaviour type with the same order twice (type: {type.Name}, order: {order}).");
+                    return;
                 }
+                else
+                    data.allOrders.Add(order);
             }
             else
             {
-                data = new OnBuildCallbackData(type, new HashSet<int>() { order }, usesV2);
+                data = new OnBuildCallbackData(type, new HashSet<int>() { order });
                 typesToLookFor.Add(type, data);
-                typesToLookForList.Add(new OrderedOnBuildCallbackData(data, order));
             }
+            typesToLookForList.Add(new OrderedOnBuildCallbackData(data, order, callback));
         }
 
         public static bool RunOnBuild()
@@ -68,8 +61,8 @@ namespace JanSharp
             Stopwatch sw = new Stopwatch();
             sw.Start();
 
-            foreach (OrderedOnBuildCallbackData orderedData in typesToLookForList)
-                orderedData.data.behaviours.Clear();
+            foreach (OnBuildCallbackData data in typesToLookFor.Values)
+                data.behaviours.Clear();
 
             foreach (GameObject obj in UnityEngine.SceneManagement.SceneManager.GetActiveScene().GetRootGameObjects())
                 foreach (UdonBehaviour udonBehaviour in obj.GetComponentsInChildren<UdonBehaviour>())
@@ -82,16 +75,8 @@ namespace JanSharp
 
             foreach (OrderedOnBuildCallbackData orderedData in typesToLookForList.OrderBy(d => d.order))
                 foreach (UdonSharpBehaviour behaviour in orderedData.data.behaviours)
-                    if (orderedData.data.usesV2)
-                    {
-                        if (!((IOnBuildCallbackV2)behaviour).OnBuild(orderedData.order))
-                            return false;
-                    }
-                    else
-                    {
-                        if (!((IOnBuildCallback)behaviour).OnBuild())
-                            return false;
-                    }
+                    if (!orderedData.callback(behaviour))
+                        return false;
 
             sw.Stop();
             UnityEngine.Debug.Log($"OnBuild handlers: {sw.Elapsed}.");
@@ -102,11 +87,13 @@ namespace JanSharp
         {
             public OnBuildCallbackData data;
             public int order;
+            public Func<UdonSharpBehaviour, bool> callback;
 
-            public OrderedOnBuildCallbackData(OnBuildCallbackData data, int order)
+            public OrderedOnBuildCallbackData(OnBuildCallbackData data, int order, Func<UdonSharpBehaviour, bool> callback)
             {
                 this.data = data;
                 this.order = order;
+                this.callback = callback;
             }
         }
 
@@ -115,26 +102,14 @@ namespace JanSharp
             public Type type;
             public List<UdonSharpBehaviour> behaviours;
             public HashSet<int> allOrders;
-            public bool usesV2;
 
-            public OnBuildCallbackData(Type type, HashSet<int> allOrders, bool usesV2)
+            public OnBuildCallbackData(Type type, HashSet<int> allOrders)
             {
                 this.type = type;
                 this.behaviours = new List<UdonSharpBehaviour>();
                 this.allOrders = allOrders;
-                this.usesV2 = usesV2;
             }
         }
-    }
-
-    public interface IOnBuildCallback
-    {
-        bool OnBuild();
-    }
-
-    public interface IOnBuildCallbackV2
-    {
-        bool OnBuild(int order);
     }
 
     ///cSpell:ignore IVRCSDK, VRCSDK

@@ -14,5 +14,36 @@ namespace JanSharp
         // however all things considered the chance of this happening is incredibly low, so low in fact
         // that I don't think it's worth a more complex system to deal with those rare cases
         [UdonSynced] [HideInInspector] public uint currentTopOrder;
+
+        private int requestSerializationCount = 0;
+        private bool waitingForOwnerToSendData = false;
+
+        public override void OnPlayerJoined(VRCPlayerApi player)
+        {
+            if (Networking.IsOwner(this.gameObject))
+            {
+                requestSerializationCount++;
+                SendCustomEventDelayedSeconds(nameof(RequestSerializationDelayed), 7f);
+            }
+            else
+            {
+                waitingForOwnerToSendData = true;
+            }
+        }
+
+        public override void OnOwnershipTransferred(VRCPlayerApi player)
+        {
+            if (waitingForOwnerToSendData && Networking.IsOwner(this.gameObject))
+            {
+                requestSerializationCount++;
+                SendCustomEventDelayedSeconds(nameof(RequestSerializationDelayed), 7f);
+            }
+        }
+
+        public void RequestSerializationDelayed()
+        {
+            if ((--requestSerializationCount) == 0)
+                RequestSerialization();
+        }
     }
 }

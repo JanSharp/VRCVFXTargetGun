@@ -13,11 +13,8 @@ namespace JanSharp
 {
     [UdonBehaviourSyncMode(BehaviourSyncMode.Manual)]
     public class EffectDescriptor : UdonSharpBehaviour
-    #if UNITY_EDITOR && !COMPILER_UDONSHARP
-        , IOnBuildCallback
-    #endif
     {
-        [SerializeField] private string effectName;
+        [HideInInspector] public string effectName;
         public string EffectName => effectName;
         [Tooltip(
 @"The effect will always face away from/be parallel to the object it is placed on,
@@ -27,17 +24,17 @@ When this is true said second rotation is random."
         public bool randomizeRotation;
 
         // set OnBuild
-        [SerializeField] [HideInInspector] private float effectDuration; // used by once effects
-        [SerializeField] [HideInInspector] private float effectLifetime; // used by loop effects
-        [SerializeField] [HideInInspector] private bool hasColliders; // used by loop effects
-        [SerializeField] [HideInInspector] private GameObject originalEffectObject;
+        [SerializeField] [HideInInspector] public float effectDuration; // used by once effects
+        [SerializeField] [HideInInspector] public float effectLifetime; // used by loop effects
+        [SerializeField] [HideInInspector] public bool hasColliders; // used by loop effects
+        [SerializeField] [HideInInspector] public GameObject originalEffectObject;
         [SerializeField] [HideInInspector] public Transform effectClonesParent;
         [SerializeField] [HideInInspector] public Vector3 effectLocalCenter;
         [SerializeField] [HideInInspector] public Vector3 effectScale;
         [SerializeField] [HideInInspector] public bool doLimitDistance;
-        [SerializeField] [HideInInspector] private EffectOrderSync orderSync;
-        [SerializeField] [HideInInspector] private VFXTargetGun gun;
-        [SerializeField] [HideInInspector] private int index;
+        [SerializeField] [HideInInspector] public EffectOrderSync orderSync;
+        [SerializeField] [HideInInspector] public VFXTargetGun gun;
+        [SerializeField] [HideInInspector] public int index;
         public int Index => index;
 
         // set in custom inspector
@@ -60,7 +57,7 @@ When this is true said second rotation is random."
         {
             if (placePreview == null)
             {
-                var obj = VRCInstantiate(originalEffectObject);
+                var obj = Instantiate(originalEffectObject);
                 placePreview = obj.transform;
                 placePreview.parent = this.transform;
                 // replace all materials
@@ -83,7 +80,7 @@ When this is true said second rotation is random."
         {
             if (highlightPreview == null)
             {
-                var obj = VRCInstantiate(originalEffectObject);
+                var obj = Instantiate(originalEffectObject);
                 highlightPreview = obj.transform;
                 highlightPreview.parent = this.transform;
                 // replace all materials
@@ -108,7 +105,7 @@ When this is true said second rotation is random."
         {
             if (deletePreview == null)
             {
-                var obj = VRCInstantiate(originalEffectObject);
+                var obj = Instantiate(originalEffectObject);
                 deletePreview = obj.transform;
                 deletePreview.parent = this.transform;
                 // replace all materials
@@ -266,126 +263,6 @@ When this is true said second rotation is random."
             MakeButton();
         }
 
-        #if UNITY_EDITOR && !COMPILER_UDONSHARP
-        public void InitAtBuildTime(VFXTargetGun gun, int index)
-        {
-            this.gun = gun;
-            this.orderSync = gun.OrderSync;
-            this.index = index;
-            this.ApplyProxyModifications();
-        }
-        [InitializeOnLoad]
-        public static class OnBuildRegister
-        {
-            static OnBuildRegister() => JanSharp.OnBuildUtil.RegisterType<EffectDescriptor>();
-        }
-        bool IOnBuildCallback.OnBuild()
-        {
-            if (this.transform.childCount == 1)
-                Instantiate(new GameObject(), this.transform.position, this.transform.rotation, this.transform).name = "EffectClones";
-            else if (this.transform.childCount != 2)
-            {
-                Debug.LogError($"The {nameof(EffectDescriptor)} must have exactly 2 children."
-                    + $" The first child must be the 'EffectParent' which is either the parent for a collection of particle systems,"
-                    + $" or the parent for an object. To be exact it is considered to be an object whenever there are no particle systems."
-                    + $" The second child must be the 'EffectClones' with exactly 0 children.");
-                return false;
-            }
-            Transform effectParent = this.transform.GetChild(0);
-            effectClonesParent = this.transform.GetChild(1);
-            if (effectClonesParent.childCount != 0)
-            {
-                Debug.LogError($"The {nameof(EffectDescriptor)}'s second child (the 'EffectClones') must have exactly 0 children.");
-                return false;
-            }
-            originalEffectObject = effectParent.gameObject;
-            var particleSystems = effectParent.GetComponentsInChildren<ParticleSystem>();
-            effectDuration = 0f;
-            if (particleSystems.Length == 0)
-            {
-                if (selectedEffectType == 0)
-                    effectType = ObjectEffect;
-            }
-            else
-            {
-                if (selectedEffectType == 0)
-                    effectType = OnceEffect;
-                foreach (var particleSystem in particleSystems)
-                {
-                    var main = particleSystem.main;
-                    if (main.playOnAwake) // NOTE: this warning is nice and all but it instantly gets cleared if clear on play is enabled
-                        Debug.LogWarning($"Particle System '{particleSystem.name}' is playing on awake which is "
-                            + $"most likely undesired. (effect obj '{this.name}', effect name '{this.effectName}')");
-                    if (main.loop && selectedEffectType == 0)
-                        effectType = LoopEffect;
-                    float lifetime;
-                    switch (main.startLifetime.mode)
-                    {
-                        case ParticleSystemCurveMode.Constant:
-                            lifetime = main.startLifetime.constant;
-                            break;
-                        case ParticleSystemCurveMode.TwoConstants:
-                            lifetime = main.startLifetime.constantMax;
-                            break;
-                        case ParticleSystemCurveMode.Curve:
-                            lifetime = main.startLifetime.curve.keys.Max(k => k.value);
-                            break;
-                        case ParticleSystemCurveMode.TwoCurves:
-                            lifetime = main.startLifetime.curveMax.keys.Max(k => k.value);
-                            break;
-                        default:
-                            lifetime = 0f; // to make the compiler happy
-                            break;
-                    }
-                    effectLifetime = Mathf.Max(effectLifetime, lifetime);
-                    // I have no idea what `psMain.startLifetimeMultiplier` actually means. It clearly isn't a multiplier.
-                    // it might also only apply to curves, but I don't know what to do with that information
-                    // basically, it gives me a 5 when the lifetime is 5. I set it to 2, it gives me a 2 back, as expected, but it also set the constant lifetime to 2.
-                    // that is not how a multiplier works
-                }
-                effectDuration = particleSystems[0].main.duration + effectLifetime;
-                if (IsLoop)
-                    hasColliders = effectParent.GetComponentInChildren<Collider>() != null;
-            }
-
-            if (IsObject)
-            {
-                var renderers = effectParent.GetComponentsInChildren<Renderer>();
-                Vector3 min = renderers.FirstOrDefault()?.bounds.min ?? effectParent.position - Vector3.one * 0.5f;
-                Vector3 max = renderers.FirstOrDefault()?.bounds.max ?? effectParent.position + Vector3.one * 0.5f;
-                foreach (Renderer renderer in renderers.Skip(1))
-                {
-                    var bounds = renderer.bounds;
-                    min.x = Mathf.Min(min.x, bounds.min.x);
-                    min.y = Mathf.Min(min.y, bounds.min.y);
-                    min.z = Mathf.Min(min.z, bounds.min.z);
-                    max.x = Mathf.Max(max.x, bounds.max.x);
-                    max.y = Mathf.Max(max.y, bounds.max.y);
-                    max.z = Mathf.Max(max.z, bounds.max.z);
-                }
-                var center = (max + min) / 2;
-                effectLocalCenter = effectParent.InverseTransformDirection(center - effectParent.position);
-                // this can overshoot by a lot because the renderer bounds are world space and their min and max points are effectively
-                // the 2 corner points for a cube that isn't rotated, which means if you have a long and thin object that's rotated
-                // 45 degrees (at build time since that's when this code runs) its bounding box will be much much larger than it would be
-                // if the object was rotated 0 degrees. However while this might overshoot, it will never undershoot, which means the
-                // target indicators will always fully contain the object they are targeting
-                effectScale = Vector3.one * (max - min).magnitude * 1.0025f;
-                doLimitDistance = effectParent.GetComponentsInChildren<Collider>().Any();
-            }
-            else
-            {
-                // TODO: figure out the size of a particle system
-                effectLocalCenter = Vector3.zero;
-                effectScale = Vector3.one;
-                doLimitDistance = false;
-            }
-
-            this.ApplyProxyModifications();
-            return true;
-        }
-        #endif
-
         private bool effectInitialized;
         private void InitEffect()
         {
@@ -411,7 +288,7 @@ When this is true said second rotation is random."
 
         private void MakeButton()
         {
-            var button = VRCInstantiate(gun.OriginalEffectButton);
+            var button = Instantiate(gun.OriginalEffectButton);
             button.SetActive(true);
             button.transform.SetParent(gun.ButtonGrid, false);
             buttonData = (EffectButtonData)button.GetComponent(typeof(UdonBehaviour));
@@ -499,7 +376,7 @@ When this is true said second rotation is random."
             // which ultimately just makes me believe it is VRCInstantiate not behaving. So, my solution is to simply not use the original object
             // except for creating copies of it and then modifying the copies. It's a waste of memory and performance
             // and an unused game object in the world but what am I supposed to do
-            var obj = VRCInstantiate(originalEffectObject);
+            var obj = Instantiate(originalEffectObject);
             effectTransform = obj.transform;
             effectTransform.parent = effectClonesParent;
             EffectParents[index] = effectTransform;
@@ -727,9 +604,15 @@ When this is true said second rotation is random."
         }
         private void MarkIndexForSync(int index)
         {
+            // Full sync relies on this too, so update it even if we are alone.
+            if (localPlayerIsAlone)
+                EffectOrder[index] = ++orderSync.currentTopOrder;
+
             if (requestedSyncs[index])
                 return;
             Debug.Log($"<dlt> Requesting sync for index {index}.");
+            // Otherwise only set the order if it's not already been requested.
+            EffectOrder[index] = ++orderSync.currentTopOrder;
             requestedSyncs[index] = true;
             requestedIndexes[requestedCount++] = index;
         }
@@ -741,11 +624,6 @@ When this is true said second rotation is random."
             Networking.SetOwner(localPlayer, this.gameObject);
             RequestSerialization();
             requestedSync = true;
-        }
-
-        public override void OnOwnershipTransferred(VRCPlayerApi player)
-        {
-            Debug.Log($"<dlt> Transferred owner to {player.displayName}");
         }
 
         public ulong CombineSyncedData(byte gunEffectIndex, int effectIndex, float time, byte actionType, uint order)
@@ -937,6 +815,55 @@ When this is true said second rotation is random."
             delayedRotations.CopyTo(newDelayedRotations, 0);
             delayedRotations = newDelayedRotations;
         }
+
+        private int currentPlayerCount;
+        private int CurrentPlayerCount
+        {
+            get => currentPlayerCount;
+            set
+            {
+                currentPlayerCount = value;
+                localPlayerIsAlone = value <= 1;
+            }
+        }
+        private bool localPlayerIsAlone = true;
+        private int requestSerializationCount = 0;
+        private bool waitingForOwnerToSendData = false;
+
+        public override void OnPlayerJoined(VRCPlayerApi player)
+        {
+            CurrentPlayerCount++;
+            if (Networking.IsOwner(this.gameObject))
+            {
+                requestSerializationCount++;
+                SendCustomEventDelayedSeconds(nameof(RequestSerializationDelayed), 9f);
+            }
+            else
+            {
+                waitingForOwnerToSendData = true;
+            }
+        }
+
+        public override void OnPlayerLeft(VRCPlayerApi player)
+        {
+            CurrentPlayerCount--;
+        }
+
+        public override void OnOwnershipTransferred(VRCPlayerApi player)
+        {
+            Debug.Log($"<dlt> Transferred owner to {Networking.LocalPlayer.displayName} (the parameter says: {player.displayName})");
+            if (waitingForOwnerToSendData && Networking.IsOwner(this.gameObject))
+            {
+                requestSerializationCount++;
+                SendCustomEventDelayedSeconds(nameof(RequestSerializationDelayed), 9f);
+            }
+        }
+
+        public void RequestSerializationDelayed()
+        {
+            if ((--requestSerializationCount) == 0)
+                RequestSerialization();
+        }
     }
 
     #if UNITY_EDITOR && !COMPILER_UDONSHARP
@@ -1011,6 +938,124 @@ When this is true said second rotation is random."
                 }
                 EditorUtility.SetDirty(target);
             }
+        }
+    }
+
+    [InitializeOnLoad]
+    public static class EffectDescriptorOnBuild
+    {
+        public static void InitAtBuildTime(EffectDescriptor descriptor, VFXTargetGun gun, int index)
+        {
+            descriptor.gun = gun;
+            descriptor.orderSync = gun.OrderSync;
+            descriptor.index = index;
+        }
+
+        static EffectDescriptorOnBuild() => JanSharp.OnBuildUtil.RegisterType<EffectDescriptor>(OnBuild);
+
+        private static bool OnBuild(UdonSharpBehaviour behaviour)
+        {
+            EffectDescriptor descriptor = (EffectDescriptor)behaviour;
+            if (descriptor.transform.childCount == 1)
+                Object.Instantiate(new GameObject(), descriptor.transform.position, descriptor.transform.rotation, descriptor.transform).name = "EffectClones";
+            else if (descriptor.transform.childCount != 2)
+            {
+                Debug.LogError($"The {nameof(EffectDescriptor)} must have exactly 2 children."
+                    + $" The first child must be the 'EffectParent' which is either the parent for a collection of particle systems,"
+                    + $" or the parent for an object. To be exact it is considered to be an object whenever there are no particle systems."
+                    + $" The second child must be the 'EffectClones' with exactly 0 children.");
+                return false;
+            }
+            Transform effectParent = descriptor.transform.GetChild(0);
+            descriptor.effectClonesParent = descriptor.transform.GetChild(1);
+            if (descriptor.effectClonesParent.childCount != 0)
+            {
+                Debug.LogError($"The {nameof(EffectDescriptor)}'s second child (the 'EffectClones') must have exactly 0 children.");
+                return false;
+            }
+            descriptor.originalEffectObject = effectParent.gameObject;
+            var particleSystems = effectParent.GetComponentsInChildren<ParticleSystem>();
+            descriptor.effectDuration = 0f;
+            if (particleSystems.Length == 0)
+            {
+                if (descriptor.selectedEffectType == 0)
+                    descriptor.effectType = EffectDescriptor.ObjectEffect;
+            }
+            else
+            {
+                if (descriptor.selectedEffectType == 0)
+                    descriptor.effectType = EffectDescriptor.OnceEffect;
+                foreach (var particleSystem in particleSystems)
+                {
+                    var main = particleSystem.main;
+                    if (main.playOnAwake) // NOTE: this warning is nice and all but it instantly gets cleared if clear on play is enabled
+                        Debug.LogWarning($"Particle System '{particleSystem.name}' is playing on awake which is "
+                            + $"most likely undesired. (effect obj '{descriptor.name}', effect name '{descriptor.effectName}')");
+                    if (main.loop && descriptor.selectedEffectType == 0)
+                        descriptor.effectType = EffectDescriptor.LoopEffect;
+                    float lifetime;
+                    switch (main.startLifetime.mode)
+                    {
+                        case ParticleSystemCurveMode.Constant:
+                            lifetime = main.startLifetime.constant;
+                            break;
+                        case ParticleSystemCurveMode.TwoConstants:
+                            lifetime = main.startLifetime.constantMax;
+                            break;
+                        case ParticleSystemCurveMode.Curve:
+                            lifetime = main.startLifetime.curve.keys.Max(k => k.value);
+                            break;
+                        case ParticleSystemCurveMode.TwoCurves:
+                            lifetime = main.startLifetime.curveMax.keys.Max(k => k.value);
+                            break;
+                        default:
+                            lifetime = 0f; // to make the compiler happy
+                            break;
+                    }
+                    descriptor.effectLifetime = Mathf.Max(descriptor.effectLifetime, lifetime);
+                    // I have no idea what `psMain.startLifetimeMultiplier` actually means. It clearly isn't a multiplier.
+                    // it might also only apply to curves, but I don't know what to do with that information
+                    // basically, it gives me a 5 when the lifetime is 5. I set it to 2, it gives me a 2 back, as expected, but it also set the constant lifetime to 2.
+                    // that is not how a multiplier works
+                }
+                descriptor.effectDuration = particleSystems[0].main.duration + descriptor.effectLifetime;
+                if (descriptor.IsLoop)
+                    descriptor.hasColliders = effectParent.GetComponentInChildren<Collider>() != null;
+            }
+
+            if (descriptor.IsObject)
+            {
+                var renderers = effectParent.GetComponentsInChildren<Renderer>();
+                Vector3 min = renderers.FirstOrDefault()?.bounds.min ?? effectParent.position - Vector3.one * 0.5f;
+                Vector3 max = renderers.FirstOrDefault()?.bounds.max ?? effectParent.position + Vector3.one * 0.5f;
+                foreach (Renderer renderer in renderers.Skip(1))
+                {
+                    var bounds = renderer.bounds;
+                    min.x = Mathf.Min(min.x, bounds.min.x);
+                    min.y = Mathf.Min(min.y, bounds.min.y);
+                    min.z = Mathf.Min(min.z, bounds.min.z);
+                    max.x = Mathf.Max(max.x, bounds.max.x);
+                    max.y = Mathf.Max(max.y, bounds.max.y);
+                    max.z = Mathf.Max(max.z, bounds.max.z);
+                }
+                var center = (max + min) / 2;
+                descriptor.effectLocalCenter = effectParent.InverseTransformDirection(center - effectParent.position);
+                // this can overshoot by a lot because the renderer bounds are world space and their min and max points are effectively
+                // the 2 corner points for a cube that isn't rotated, which means if you have a long and thin object that's rotated
+                // 45 degrees (at build time since that's when this code runs) its bounding box will be much much larger than it would be
+                // if the object was rotated 0 degrees. However while this might overshoot, it will never undershoot, which means the
+                // target indicators will always fully contain the object they are targeting
+                descriptor.effectScale = Vector3.one * (max - min).magnitude * 1.0025f;
+                descriptor.doLimitDistance = effectParent.GetComponentsInChildren<Collider>().Any();
+            }
+            else
+            {
+                // TODO: figure out the size of a particle system
+                descriptor.effectLocalCenter = Vector3.zero;
+                descriptor.effectScale = Vector3.one;
+                descriptor.doLimitDistance = false;
+            }
+            return true;
         }
     }
     #endif

@@ -11,57 +11,14 @@ namespace JanSharp
 {
     [UdonBehaviourSyncMode(BehaviourSyncMode.None)]
     public class InstObjectPool : UdonSharpBehaviour
-    #if UNITY_EDITOR && !COMPILER_UDONSHARP
-        , IOnBuildCallback
-    #endif
     {
-        [SerializeField] [HideInInspector] private GameObject original;
-        [SerializeField] [HideInInspector] private Vector3 originalLocalPosition;
-        [SerializeField] [HideInInspector] private Quaternion originalLocalRotation;
-        [SerializeField] [HideInInspector] private Transform activeParent;
-        [SerializeField] [HideInInspector] private Transform inactiveParent;
-        [SerializeField] [HideInInspector] private int activeCount;
+        [HideInInspector] public GameObject original;
+        [HideInInspector] public Vector3 originalLocalPosition;
+        [HideInInspector] public Quaternion originalLocalRotation;
+        [HideInInspector] public Transform activeParent;
+        [HideInInspector] public Transform inactiveParent;
+        [HideInInspector] public int activeCount;
         private int totalCount = 1;
-
-        #if UNITY_EDITOR && !COMPILER_UDONSHARP
-        [InitializeOnLoad]
-        public static class OnBuildRegister
-        {
-            static OnBuildRegister() => JanSharp.OnBuildUtil.RegisterType<InstObjectPool>();
-        }
-        bool IOnBuildCallback.OnBuild()
-        {
-            if (this.transform.childCount == 2)
-            {
-                activeParent = this.transform.GetChild(0);
-                inactiveParent = this.transform.GetChild(1);
-                original = (activeParent.childCount == 0 ? inactiveParent.GetChild(0) : activeParent.GetChild(0)).gameObject;
-            }
-            else if (this.transform.childCount == 1)
-            {
-                original = this.transform.GetChild(0).gameObject;
-                Transform MakeEmpty(string name)
-                {
-                    var result = Instantiate(new GameObject(), this.transform.position, this.transform.rotation, this.transform).transform;
-                    result.name = name;
-                    return result;
-                }
-                activeParent = MakeEmpty("ActiveParent");
-                inactiveParent = MakeEmpty("InactiveParent");
-            }
-            else
-            {
-                Debug.LogError("Expected single child for Inst Object Pool which would be the item to be pooled.");
-                return false;
-            }
-            original.transform.parent = original.activeSelf ? activeParent : inactiveParent;
-            originalLocalPosition = original.transform.localPosition;
-            originalLocalRotation = original.transform.localRotation;
-            activeCount = original.activeSelf ? 1 : 0;
-            this.ApplyProxyModifications();
-            return original != null;
-        }
-        #endif
 
         public void Spawn()
         {
@@ -105,4 +62,53 @@ namespace JanSharp
             // but one can hope, right?
         }
     }
+
+    #if UNITY_EDITOR && !COMPILER_UDONSHARP
+    [InitializeOnLoad]
+    public static class InstObjectPoolOnBuild
+    {
+        static InstObjectPoolOnBuild() => JanSharp.OnBuildUtil.RegisterType<InstObjectPool>(OnBuild);
+
+        private static bool OnBuild(UdonSharpBehaviour behaviour)
+        {
+            InstObjectPool instObjectPool = (InstObjectPool)behaviour;
+            if (instObjectPool.transform.childCount == 2)
+            {
+                instObjectPool.activeParent = instObjectPool.transform.GetChild(0);
+                instObjectPool.inactiveParent = instObjectPool.transform.GetChild(1);
+                instObjectPool.original = (instObjectPool.activeParent.childCount == 0
+                    ? instObjectPool.inactiveParent.GetChild(0)
+                    : instObjectPool.activeParent.GetChild(0)).gameObject;
+            }
+            else if (instObjectPool.transform.childCount == 1)
+            {
+                instObjectPool.original = instObjectPool.transform.GetChild(0).gameObject;
+                Transform MakeEmpty(string name)
+                {
+                    var result = Object.Instantiate(
+                        new GameObject(),
+                        instObjectPool.transform.position,
+                        instObjectPool.transform.rotation,
+                        instObjectPool.transform
+                    ).transform;
+                    result.name = name;
+                    return result;
+                }
+                instObjectPool.activeParent = MakeEmpty("ActiveParent");
+                instObjectPool.inactiveParent = MakeEmpty("InactiveParent");
+            }
+            else
+            {
+                Debug.LogError("Expected single child for Inst Object Pool which would be the item to be pooled.");
+                return false;
+            }
+            instObjectPool.original.transform.parent = instObjectPool.original.activeSelf ? instObjectPool.activeParent : instObjectPool.inactiveParent;
+            instObjectPool.originalLocalPosition = instObjectPool.original.transform.localPosition;
+            instObjectPool.originalLocalRotation = instObjectPool.original.transform.localRotation;
+            instObjectPool.activeCount = instObjectPool.original.activeSelf ? 1 : 0;
+            instObjectPool.ApplyProxyModifications();
+            return instObjectPool.original != null;
+        }
+    }
+    #endif
 }

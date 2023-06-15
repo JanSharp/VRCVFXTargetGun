@@ -15,12 +15,9 @@ namespace JanSharp
 {
     [UdonBehaviourSyncMode(BehaviourSyncMode.None)]
     public class VFXTargetGun : UdonSharpBehaviour
-    #if UNITY_EDITOR && !COMPILER_UDONSHARP
-        , IOnBuildCallback
-    #endif
     {
         [Header("Configuration")]
-        [SerializeField] private Transform effectsParent;
+        [SerializeField] public Transform effectsParent;
         [SerializeField] private float maxDistance = 250f;
         // 0: Default, 4: Water, 8: Interactive, 11: Environment, 13: Pickup
         [Tooltip("Used to figure out where to place an effect.")]
@@ -53,14 +50,14 @@ namespace JanSharp
         [SerializeField] private ScrollRect scrollRect;
         [SerializeField] private GameObject uiToggle;
         [SerializeField] private UdonBehaviour placeDeleteModeToggle;
-        [SerializeField] private GameObject gunMesh;
+        public GameObject gunMesh;
         [SerializeField] private VRC_Pickup pickup;
         public VRC_Pickup Pickup => pickup;
         [SerializeField] private Transform aimPoint;
         [SerializeField] private Transform placeIndicator;
         [SerializeField] private GameObject placeIndicatorForwardsArrow;
         [SerializeField] private Transform deleteIndicator;
-        [SerializeField] private Transform laser;
+        [HideInInspector] public Transform laser;
         [SerializeField] private Transform secondLaser;
         [SerializeField] private Transform highlightLaser;
         [SerializeField] private Renderer uiToggleRenderer;
@@ -75,7 +72,7 @@ namespace JanSharp
         [SerializeField] private Toggle placePreviewToggle;
         [SerializeField] private Toggle deletePreviewToggle;
         [SerializeField] private Toggle editPreviewToggle;
-        [SerializeField] private EffectOrderSync orderSync;
+        public EffectOrderSync orderSync;
         public EffectOrderSync OrderSync => orderSync;
         [SerializeField] private VFXTargetGunEffectsFullSync fullSync;
         [SerializeField] public Material placePreviewMaterial;
@@ -88,50 +85,9 @@ namespace JanSharp
         [SerializeField] public ToggleGroup effectsToggleGroup;
 
         // set OnBuild
-        [SerializeField] [HideInInspector] private MeshRenderer[] gunMeshRenderers;
-        [SerializeField] [HideInInspector] private float laserBaseScale;
-        [SerializeField] [HideInInspector] public EffectDescriptor[] descriptors;
-
-        #if UNITY_EDITOR && !COMPILER_UDONSHARP
-        [InitializeOnLoad]
-        public static class OnBuildRegister
-        {
-            static OnBuildRegister() => JanSharp.OnBuildUtil.RegisterType<VFXTargetGun>();
-        }
-        bool IOnBuildCallback.OnBuild()
-        {
-            if (effectsParent == null)
-            {
-                Debug.LogError($"Please create a game object with {nameof(EffectDescriptor)}s as children"
-                    + $" and drag it to the 'Effects Parent' of the {nameof(VFXTargetGun)}.");
-                return false;
-            }
-            if (gunMesh == null || laser == null || orderSync == null)
-            {
-                Debug.LogError("VFX Target gun requires all internal references to be set in the inspector.");
-                return false;
-            }
-            gunMeshRenderers = gunMesh.GetComponentsInChildren<MeshRenderer>();
-            descriptors = new EffectDescriptor[effectsParent.childCount];
-            bool result = true;
-            for (int i = 0; i < effectsParent.childCount; i++)
-            {
-                var descriptor = effectsParent.GetChild(i).GetUdonSharpComponent<EffectDescriptor>();
-                descriptors[i] = descriptor;
-                if (descriptor == null)
-                {
-                    Debug.LogError($"The child #{i + 1} ({effectsParent.GetChild(i).name}) "
-                        + $"of the effects descriptor parent does not have an {nameof(EffectDescriptor)}.");
-                    result = false;
-                }
-                else
-                    descriptor.InitAtBuildTime(this, i);
-            }
-            laserBaseScale = laser.localScale.z;
-            this.ApplyProxyModifications();
-            return result;
-        }
-        #endif
+        [HideInInspector] public MeshRenderer[] gunMeshRenderers;
+        [HideInInspector] public float laserBaseScale;
+        [HideInInspector] public EffectDescriptor[] descriptors;
 
         private const int UnknownMode = 0;
         private const int PlaceMode = 1;
@@ -1096,4 +1052,46 @@ namespace JanSharp
             }
         }
     }
+
+    #if UNITY_EDITOR && !COMPILER_UDONSHARP
+    [InitializeOnLoad]
+    public static class VFXTargetGunOnBuild
+    {
+        static VFXTargetGunOnBuild() => JanSharp.OnBuildUtil.RegisterType<VFXTargetGun>(OnBuild);
+
+        private static bool OnBuild(UdonSharpBehaviour behaviour)
+        {
+            VFXTargetGun vfxTargetGun = (VFXTargetGun)behaviour;
+            if (vfxTargetGun.effectsParent == null)
+            {
+                Debug.LogError($"Please create a game object with {nameof(EffectDescriptor)}s as children"
+                    + $" and drag it to the 'Effects Parent' of the {nameof(VFXTargetGun)}.");
+                return false;
+            }
+            if (vfxTargetGun.gunMesh == null || vfxTargetGun.laser == null || vfxTargetGun.orderSync == null)
+            {
+                Debug.LogError("VFX Target gun requires all internal references to be set in the inspector.");
+                return false;
+            }
+            vfxTargetGun.gunMeshRenderers = vfxTargetGun.gunMesh.GetComponentsInChildren<MeshRenderer>();
+            vfxTargetGun.descriptors = new EffectDescriptor[vfxTargetGun.effectsParent.childCount];
+            bool result = true;
+            for (int i = 0; i < vfxTargetGun.effectsParent.childCount; i++)
+            {
+                var descriptor = vfxTargetGun.effectsParent.GetChild(i).GetComponent<EffectDescriptor>();
+                vfxTargetGun.descriptors[i] = descriptor;
+                if (descriptor == null)
+                {
+                    Debug.LogError($"The child #{i + 1} ({vfxTargetGun.effectsParent.GetChild(i).name}) "
+                        + $"of the effects descriptor parent does not have an {nameof(EffectDescriptor)}.");
+                    result = false;
+                }
+                else
+                    EffectDescriptorOnBuild.InitAtBuildTime(descriptor, vfxTargetGun, i);
+            }
+            vfxTargetGun.laserBaseScale = vfxTargetGun.laser.localScale.z;
+            return result;
+        }
+    }
+    #endif
 }

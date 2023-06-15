@@ -15,18 +15,17 @@ MonoBehaviour:
   serializedUdonProgramAsset: {fileID: 11400000, guid: f7c65ec70fe847b24b5919fb9a6109a8,
     type: 2}
   udonAssembly: ".data_start\n\n    .export RB\n    \n    __instance_0: %UnityEngineRigidbody,
-    null\n    __value_0: %UnityEngineVector3, null\n    __Single_0: %SystemSingle,
-    null\n    __Single_1: %SystemSingle, null\n    __instance_1: %UnityEngineVector3,
-    null\n    __instance_2: %UnityEngineRigidbody, null\n    __instance_3: %VRCUdonUdonBehaviour,
+    null\n    __value_0: %UnityEngineVector3, null\n    __x_0: %SystemSingle, null\n   
+    __y_0: %SystemSingle, null\n    __instance_1: %UnityEngineVector3, null\n   
+    __instance_2: %UnityEngineRigidbody, null\n    __instance_3: %VRCUdonUdonBehaviour,
     this\n    __value_1: %SystemString, null\n    __String_0: %SystemString, null\n   
     __String_1: %SystemString, null\n    __instance_4: %VRCUdonUdonBehaviour, this\n   
     RB: %UnityEngineRigidbody, null\n    Speed: %SystemSingle, null\n\n.data_end\n\n.code_start\n\n   
     .export Event12\n    \n    Event12:\n    \n        PUSH, RB\n        PUSH, __instance_0\n       
     COPY\n        PUSH, RB\n        PUSH, __instance_2\n        COPY\n        PUSH,
     __instance_2\n        PUSH, __instance_1\n        EXTERN, \"UnityEngineRigidbody.__get_velocity__UnityEngineVector3\"\n       
-    PUSH, __instance_1\n        PUSH, __Single_1\n        EXTERN, \"UnityEngineVector3.__get_y__SystemSingle\"\n       
-    PUSH, Speed\n        PUSH, __Single_1\n        PUSH, __value_0\n        EXTERN,
-    \"UnityEngineVector3.__ctor__SystemSingle_SystemSingle__UnityEngineVector3\"\n       
+    PUSH, __instance_1\n        PUSH, __y_0\n        EXTERN, \"UnityEngineVector3.__get_y__SystemSingle\"\n       
+    PUSH, Speed\n        PUSH, __y_0\n        PUSH, __value_0\n        EXTERN, \"UnityEngineVector3.__ctor__SystemSingle_SystemSingle__UnityEngineVector3\"\n       
     PUSH, __instance_0\n        PUSH, __value_0\n        EXTERN, \"UnityEngineRigidbody.__set_velocity__UnityEngineVector3__SystemVoid\"\n       
     JUMP, 0xFFFFFFFC\n    \n    .export _interact\n    \n    _interact:\n    \n       
     PUSH, __instance_4\n        PUSH, __String_0\n        EXTERN, \"VRCUdonCommonInterfacesIUdonEventReceiver.__get_InteractionText__SystemString\"\n       

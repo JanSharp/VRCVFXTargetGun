@@ -14,9 +14,6 @@ namespace JanSharp
 {
     [UdonBehaviourSyncMode(BehaviourSyncMode.Manual)]
     public class Chalkboard : UdonSharpBehaviour
-    #if UNITY_EDITOR && !COMPILER_UDONSHARP
-        , IOnBuildCallback
-    #endif
     {
         public Transform bottomLeft;
         public Transform topRight;
@@ -25,7 +22,7 @@ namespace JanSharp
 
         [HideInInspector] public int boardId;
         [HideInInspector] public Transform boardParent;
-        [HideInInspector] [SerializeField] private ChalkboardManager chalkboardManager;
+        [HideInInspector] public ChalkboardManager chalkboardManager;
         [HideInInspector] [System.NonSerialized] public Texture2D texture;
         [HideInInspector] public Vector3 chalkScale;
         [HideInInspector] public Vector3 spongeScale;
@@ -76,11 +73,12 @@ namespace JanSharp
         private int receivedPrevY;
         private const float SyncFrequency = 0.3f;
         private const float LateJoinerSyncDelay = 15f;
-        private int initSendingCount;
+        private int requestSerializationDelayedCount;
         private ulong[] catchUpQueue;
         private int catchUpQueueCount;
         private int catchUpQueueIndex;
         private bool somebodyIsCatchingUp;
+        private bool ignoreNextSync = true;
 
         private void Start()
         {
@@ -149,65 +147,6 @@ namespace JanSharp
             texture.Apply();
             superSlowUpdating = false;
         }
-
-        #if UNITY_EDITOR && !COMPILER_UDONSHARP
-        [InitializeOnLoad]
-        public static class OnBuildRegister
-        {
-            static OnBuildRegister() => JanSharp.OnBuildUtil.RegisterType<Chalkboard>();
-        }
-        bool IOnBuildCallback.OnBuild()
-        {
-            chalkboardManager = GameObject.Find("/ChalkboardManager")?.GetUdonSharpComponent<ChalkboardManager>();
-            boardId = chalkboardManager?.GetBoardId(this) ?? -1;
-            if (chalkboardManager == null)
-                Debug.LogError("Chalkboard requires a GameObject that must be at the root of the scene"
-                        + " with the exact name 'ChalkboardManager' which has the 'ChalkboardManager' UdonBehaviour.",
-                    UdonSharpEditorUtility.GetBackingUdonBehaviour(this));
-
-            if (bottomLeft != null && topRight != null && material != null)
-            {
-                var blPos = bottomLeft.position;
-                var trPos = topRight.position;
-
-                var vertical = bottomLeft.up;
-                var horizontal = bottomLeft.right;
-
-                // blPos.x + X * horizontal.x + Y * vertical.x = trPos.x
-                // blPos.y + X * horizontal.y + Y * vertical.y = trPos.y
-                // blPos.z + X * horizontal.z + Y * vertical.z = trPos.z
-
-                // blPos.x + X * horizontal.x + Y * vertical.x - trPos.x = 0
-                // blPos.y + X * horizontal.y + Y * vertical.y - trPos.y = 0
-                // blPos.z + X * horizontal.z + Y * vertical.z - trPos.z = 0
-
-                boardParent = bottomLeft.parent;
-                if (topRight.parent != boardParent)
-                    Debug.LogError($"{nameof(bottomLeft)} and {nameof(topRight)} must share the same parent",
-                        UdonSharpEditorUtility.GetBackingUdonBehaviour(this));
-
-                var texture = (Texture2D)material.mainTexture;
-                var pixelsPerUnit = new Vector3(
-                    ((topRight.localPosition.x - bottomLeft.localPosition.x) / texture.width),
-                    ((topRight.localPosition.y - bottomLeft.localPosition.y) / texture.height)
-                );
-                var lossyScale = boardParent.lossyScale;
-
-                chalkScale = pixelsPerUnit * 5.75f;
-                chalkScale = new Vector3(lossyScale.x * chalkScale.x, lossyScale.y * chalkScale.y, 0.01f);
-                spongeScale = pixelsPerUnit * 41f;
-                spongeScale = new Vector3(lossyScale.x * spongeScale.x, lossyScale.y * spongeScale.y, 0.01f);
-            }
-
-            if (bottomLeft == null || topRight == null || material == null)
-                Debug.LogError($"{nameof(bottomLeft)}, {nameof(topRight)} and {nameof(material)} must all be set.",
-                    UdonSharpEditorUtility.GetBackingUdonBehaviour(this));
-
-            this.ApplyProxyModifications();
-            // EditorUtility.SetDirty(UdonSharpEditorUtility.GetBackingUdonBehaviour(this));
-            return chalkboardManager != null;
-        }
-        #endif
 
         public void Clear()
         {
@@ -443,7 +382,7 @@ namespace JanSharp
         private void InitSending()
         {
             SendCustomEventDelayedSeconds(nameof(RequestSerializationDelayed), LateJoinerSyncDelay); // honestly... I'm annoyed
-            initSendingCount++;
+            requestSerializationDelayedCount++;
             somebodyIsCatchingUp = false;
             sending = false;
             waitingToStartSending = true;
@@ -451,6 +390,8 @@ namespace JanSharp
 
         public override void OnPreSerialization()
         {
+            if (ignoreNextSync)
+                return;
             syncedActions1 = GetNextActions();
             syncedActions2 = GetNextActions();
             syncedActions3 = GetNextActions();
@@ -464,7 +405,7 @@ namespace JanSharp
             if (!sending)
             {
                 #if ChalkboardDebug
-                Debug.Log($"<dlt> ICU VRC trying to screw me, no I'm not syncing data right now. Ok at this point the logic actually uses this intentionally.");
+                Debug.Log($"<dlt> Currently not sending or done with sending, sending no-op '0'.");
                 #endif
                 return 0UL;
             }
@@ -492,7 +433,7 @@ namespace JanSharp
 
         public void RequestSerializationDelayed()
         {
-            if ((--initSendingCount) == 0)
+            if ((--requestSerializationDelayedCount) == 0)
                 RequestSerializationLoop();
         }
 
@@ -514,15 +455,32 @@ namespace JanSharp
             RequestSerialization();
         }
 
-        #if ChalkboardDebug
         public override void OnPostSerialization(SerializationResult result)
         {
+            #if ChalkboardDebug
             Debug.Log($"<dlt> on post: success: {result.success}, byteCount: {result.byteCount}");
+            #endif
+            if (!result.success) // If it wasn't successful, retry later.
+            {
+                SendCustomEventDelayedSeconds(nameof(RequestSerializationDelayed), 10f);
+                requestSerializationDelayedCount++;
+            }
+            else if (ignoreNextSync)
+            {
+                // If it was successful, and we're ignoring the next (aka this) sync, unset the ignore flag and sync again as soon as possible.
+                ignoreNextSync = false;
+                SendCustomEventDelayedFrames(nameof(RequestSerializationDelayed), 1);
+                requestSerializationDelayedCount++;
+            }
         }
-        #endif
 
         public override void OnDeserialization()
         {
+            if (ignoreNextSync)
+            {
+                ignoreNextSync = false;
+                return;
+            }
             ProcessSyncedActions(syncedActions1);
             ProcessSyncedActions(syncedActions2);
             ProcessSyncedActions(syncedActions3);
@@ -634,4 +592,68 @@ namespace JanSharp
             SendCustomEventDelayedFrames(nameof(CatchUpWithQueue), 1);
         }
     }
+
+    #if UNITY_EDITOR && !COMPILER_UDONSHARP
+    [InitializeOnLoad]
+    internal static class ChalkboardOnBuildRegister
+    {
+        static ChalkboardOnBuildRegister() => JanSharp.OnBuildUtil.RegisterType<Chalkboard>(OnBuild);
+
+        private static bool OnBuild(UdonSharpBehaviour behaviour)
+        {
+            Chalkboard chalkboard = (Chalkboard)behaviour;
+            chalkboard.chalkboardManager = GameObject.Find("/ChalkboardManager")?.GetComponent<ChalkboardManager>();
+            if (chalkboard.chalkboardManager != null)
+                chalkboard.boardId = ChalkboardManagerOnBuild.GetBoardId(chalkboard.chalkboardManager, chalkboard);
+            else
+                chalkboard.boardId = -1;
+
+            if (chalkboard.chalkboardManager == null)
+                Debug.LogError("Chalkboard requires a GameObject that must be at the root of the scene"
+                        + " with the exact name 'ChalkboardManager' which has the 'ChalkboardManager' UdonBehaviour.",
+                    UdonSharpEditorUtility.GetBackingUdonBehaviour(chalkboard));
+
+            if (chalkboard.bottomLeft != null && chalkboard.topRight != null && chalkboard.material != null)
+            {
+                var blPos = chalkboard.bottomLeft.position;
+                var trPos = chalkboard.topRight.position;
+
+                var vertical = chalkboard.bottomLeft.up;
+                var horizontal = chalkboard.bottomLeft.right;
+
+                // blPos.x + X * horizontal.x + Y * vertical.x = trPos.x
+                // blPos.y + X * horizontal.y + Y * vertical.y = trPos.y
+                // blPos.z + X * horizontal.z + Y * vertical.z = trPos.z
+
+                // blPos.x + X * horizontal.x + Y * vertical.x - trPos.x = 0
+                // blPos.y + X * horizontal.y + Y * vertical.y - trPos.y = 0
+                // blPos.z + X * horizontal.z + Y * vertical.z - trPos.z = 0
+
+                chalkboard.boardParent = chalkboard.bottomLeft.parent;
+                if (chalkboard.topRight.parent != chalkboard.boardParent)
+                    Debug.LogError($"{nameof(chalkboard.bottomLeft)} and {nameof(chalkboard.topRight)} must share the same parent",
+                        UdonSharpEditorUtility.GetBackingUdonBehaviour(chalkboard));
+
+                var texture = (Texture2D)chalkboard.material.mainTexture;
+                var pixelsPerUnit = new Vector3(
+                    ((chalkboard.topRight.localPosition.x - chalkboard.bottomLeft.localPosition.x) / texture.width),
+                    ((chalkboard.topRight.localPosition.y - chalkboard.bottomLeft.localPosition.y) / texture.height)
+                );
+                var lossyScale = chalkboard.boardParent.lossyScale;
+
+                chalkboard.chalkScale = pixelsPerUnit * 5.75f;
+                chalkboard.chalkScale = new Vector3(lossyScale.x * chalkboard.chalkScale.x, lossyScale.y * chalkboard.chalkScale.y, 0.01f);
+                chalkboard.spongeScale = pixelsPerUnit * 41f;
+                chalkboard.spongeScale = new Vector3(lossyScale.x * chalkboard.spongeScale.x, lossyScale.y * chalkboard.spongeScale.y, 0.01f);
+            }
+
+            if (chalkboard.bottomLeft == null || chalkboard.topRight == null || chalkboard.material == null)
+                Debug.LogError($"{nameof(chalkboard.bottomLeft)}, {nameof(chalkboard.topRight)} and {nameof(chalkboard.material)} must all be set.",
+                    UdonSharpEditorUtility.GetBackingUdonBehaviour(chalkboard));
+
+            // EditorUtility.SetDirty(UdonSharpEditorUtility.GetBackingUdonBehaviour(this));
+            return chalkboard.chalkboardManager != null;
+        }
+    }
+    #endif
 }

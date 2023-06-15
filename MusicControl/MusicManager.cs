@@ -18,8 +18,6 @@ namespace JanSharp
             {
                 if (defaultMusic == value)
                     return;
-                defaultMusic.isCurrentDefaultMusic = false;
-                value.isCurrentDefaultMusic = true;
                 ReplaceMusic(0, value);
                 defaultMusic = value;
                 defaultMusicIndex = value.Index;
@@ -77,26 +75,21 @@ namespace JanSharp
         {
             if (descriptors == null || descriptors.Length == 0)
             {
-                Debug.LogError($"MusicManager {name} is missing music descriptors.");
+                Debug.LogWarning($"<dlt> {nameof(MusicManager)} {name} is missing {nameof(MusicDescriptor)}s.");
+                return;
+            }
+            if (DefaultMusic == null)
+            {
+                Debug.LogError($"<dlt> {nameof(MusicManager)} {name}'s default music is null. Use a {nameof(MusicDescriptor)} with the silence flag instead.");
                 return;
             }
             for (int i = 0; i < descriptors.Length; i++)
                 descriptors[i].Init(this, i);
             musicList = new MusicDescriptor[8];
             musicListIds = new uint[8];
-            DefaultMusic.isCurrentDefaultMusic = true;
             musicListCount++;
             SetMusic(0, nextMusicId++, DefaultMusic);
             defaultMusicIndex = DefaultMusic.Index;
-        }
-
-        public override void OnPlayerRespawn(VRCPlayerApi player)
-        {
-            if (player.isLocal)
-            {
-                musicListCount = 1;
-                SwitchToTop();
-            }
         }
 
         // for convenience, specifically for hooking them up with GUI buttons
@@ -140,7 +133,8 @@ namespace JanSharp
             {
                 var descriptor = musicList[i];
                 // on priority collision the last one added "wins"
-                if (toAdd.Priority >= descriptor.Priority)
+                // 0 is always the default music, so upon reaching index 0, set the music to be at index 1.
+                if (toAdd.Priority >= descriptor.Priority || i == 0)
                 {
                     SetMusic(i + 1, nextMusicId, toAdd);
                     break;
@@ -168,6 +162,12 @@ namespace JanSharp
 
         public void RemoveMusic(uint id)
         {
+            if (musicListCount == 0)
+            {
+                Debug.LogWarning($"<dlt> Attempt to {nameof(RemoveMusic)} the id {id} when the music stack is completely empty.");
+                return;
+            }
+
             musicListCount--;
             MusicDescriptor prevDescriptor = null;
             uint prevId = 0;
@@ -187,7 +187,18 @@ namespace JanSharp
                 prevDescriptor = currentDescriptor;
                 prevId = currentId;
             }
-            Debug.LogError($"Attempt to RemoveMusic the id {id} that is not in the music stack.");
+
+            Debug.LogWarning($"<dlt> Attempt to {nameof(RemoveMusic)} the id {id} that is not in the music stack.");
+
+            // To gracefully handle the error, restore the lists, since the previous loop ultimately removed musicList[0].
+            for (int i = musicListCount - 1; i >= 0; i--)
+            {
+                musicList[i + 1] = musicList[i];
+                musicListIds[i + 1] = musicListIds[i];
+            }
+            musicList[0] = prevDescriptor;
+            musicListIds[0] = prevId;
+            musicListCount++;
         }
 
         private void ReplaceMusic(int index, MusicDescriptor descriptor)

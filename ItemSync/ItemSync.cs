@@ -12,9 +12,6 @@ namespace JanSharp
 {
     [UdonBehaviourSyncMode(BehaviourSyncMode.Manual)]
     public class ItemSync : UdonSharpBehaviour
-    #if UNITY_EDITOR && !COMPILER_UDONSHARP
-        , IOnBuildCallback
-    #endif
     {
         #if ItemSyncDebug
         [HideInInspector] public int debugIndex;
@@ -23,11 +20,11 @@ namespace JanSharp
         #endif
 
         // set OnBuild
-        [SerializeField] [HideInInspector] private UpdateManager updateManager;
-        [SerializeField] [HideInInspector] private VRC_Pickup pickup;
+        [HideInInspector] public UpdateManager updateManager;
+        [HideInInspector] public VRC_Pickup pickup;
         // NOTE: VRCPlayerApi.GetBoneTransform is not exposed so we have to use a dummy transform and teleport it around
         // because InverseTransformDirection and TransformDirection require an instance of a Transform
-        [SerializeField] [HideInInspector] private Transform dummyTransform;
+        [HideInInspector] public Transform dummyTransform;
 
         private const byte IdleState = 0; // the only state with CustomUpdate deregistered
         private const byte VRWaitingForConsistentOffsetState = 1;
@@ -201,32 +198,6 @@ namespace JanSharp
                 renderer.enabled = true;
             if (debugController != null)
                 debugController.Register(this);
-        }
-        #endif
-
-        #if UNITY_EDITOR && !COMPILER_UDONSHARP
-        [InitializeOnLoad]
-        public static class OnBuildRegister
-        {
-            static OnBuildRegister() => JanSharp.OnBuildUtil.RegisterType<ItemSync>();
-        }
-        bool IOnBuildCallback.OnBuild()
-        {
-            pickup = GetComponent<VRC_Pickup>();
-            Debug.Assert(pickup != null, "ItemSync must be on a GameObject with a VRC_Pickup component.");
-            var updateManagerObj = GameObject.Find("/UpdateManager");
-            updateManager = updateManagerObj?.GetUdonSharpComponent<UpdateManager>();
-            dummyTransform = updateManagerObj?.transform;
-            Debug.Assert(updateManager != null, "ItemSync requires a GameObject that must be at the root of the scene"
-                + " with the exact name 'UpdateManager' which has the 'UpdateManager' UdonBehaviour."
-            );
-
-            #if ItemSyncDebug
-            debugController = GameObject.Find("/DebugController")?.GetUdonSharpComponent<ItemSyncDebugController>();
-            #endif
-
-            this.ApplyProxyModifications();
-            return pickup != null && updateManager != null;
         }
         #endif
 
@@ -584,6 +555,33 @@ namespace JanSharp
     }
 
     #if !COMPILER_UDONSHARP && UNITY_EDITOR
+
+    [InitializeOnLoad]
+    public static class ItemSyncOnBuild
+    {
+        static ItemSyncOnBuild() => JanSharp.OnBuildUtil.RegisterType<ItemSync>(OnBuild);
+
+        private static bool OnBuild(UdonSharpBehaviour behaviour)
+        {
+            ItemSync itemSync = (ItemSync)behaviour;
+            itemSync.pickup = itemSync.GetComponent<VRC_Pickup>();
+            Debug.Assert(itemSync.pickup != null, "ItemSync must be on a GameObject with a VRC_Pickup component.");
+            var updateManagerObj = GameObject.Find("/UpdateManager");
+            itemSync.updateManager = updateManagerObj?.GetUdonSharpComponent<UpdateManager>();
+            itemSync.dummyTransform = updateManagerObj?.transform;
+            Debug.Assert(itemSync.updateManager != null, "ItemSync requires a GameObject that must be at the root of the scene"
+                + " with the exact name 'UpdateManager' which has the 'UpdateManager' UdonBehaviour."
+            );
+
+            #if ItemSyncDebug
+            debugController = GameObject.Find("/DebugController")?.GetUdonSharpComponent<ItemSyncDebugController>();
+            #endif
+
+            itemSync.ApplyProxyModifications();
+            return itemSync != null && itemSync != null;
+        }
+    }
+
     [CustomEditor(typeof(ItemSync))]
     public class ItemSyncEditor : Editor
     {

@@ -1,6 +1,17 @@
 
 # Changelog
 
+## [0.4.0] - 2023-06-15
+
+### Changed
+
+- **Breaking:** Remove and change use of deprecated UdonSharp editor and Udon functions (`6708b5f`)
+- Migrate to VRChat Creator Companion (`9ae838c`, `78b73b6`)
+
+### Fixed
+
+- Fix late joiner syncing due to networking changes in VRChat (`af4bd57`)
+
 ## [0.3.0] - 2022-07-10
 
 ### Added
@@ -122,6 +133,7 @@ _Initial release._
 - Add basic UI (`b99f245`)
 - Workaround for VRCInstantiate being weird (`4e4840e`)
 
+<!-- VFXTargetGun_v0.4.0 -->
 <!-- VFXTargetGun_v0.3.0 -->
 <!-- VFXTargetGun_v0.2.3 -->
 <!-- VFXTargetGun_v0.2.2 -->
@@ -129,6 +141,7 @@ _Initial release._
 <!-- VFXTargetGun_v0.2.0 -->
 <!-- VFXTargetGun_v0.1.0 -->
 
+[0.4.0]: /dev/null
 [0.3.0]: /dev/null
 [0.2.3]: /dev/null
 [0.2.2]: /dev/null

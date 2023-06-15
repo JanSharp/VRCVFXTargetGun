@@ -13,9 +13,7 @@ namespace JanSharp
         public float updateIntervalInSeconds = 0.1f;
         [SerializeField]
         private int priority;
-        public int Priority => isCurrentDefaultMusic ? int.MinValue : priority;
-        [HideInInspector]
-        public bool isCurrentDefaultMusic;
+        public int Priority => priority;
 
         [SerializeField]
         [Tooltip(@"A music descriptor describing the absence of music. When true, other properties get ignored, except for priority.")]

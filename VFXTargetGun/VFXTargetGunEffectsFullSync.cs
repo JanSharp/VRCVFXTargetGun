@@ -15,8 +15,40 @@ namespace JanSharp
         [UdonSynced] private Vector3[] syncedPositions;
         [UdonSynced] private Quaternion[] syncedRotations;
 
+        private int requestSerializationCount = 0;
+        private bool waitingForOwnerToSendData = false;
+
+        public override void OnPlayerJoined(VRCPlayerApi player)
+        {
+            if (Networking.IsOwner(this.gameObject))
+            {
+                requestSerializationCount++;
+                SendCustomEventDelayedSeconds(nameof(RequestSerializationDelayed), 8f);
+            }
+            else
+            {
+                waitingForOwnerToSendData = true;
+            }
+        }
+
+        public override void OnOwnershipTransferred(VRCPlayerApi player)
+        {
+            if (waitingForOwnerToSendData && Networking.IsOwner(this.gameObject))
+            {
+                requestSerializationCount++;
+                SendCustomEventDelayedSeconds(nameof(RequestSerializationDelayed), 8f);
+            }
+        }
+
+        public void RequestSerializationDelayed()
+        {
+            if ((--requestSerializationCount) == 0)
+                RequestSerialization();
+        }
+
         public override void OnPreSerialization()
         {
+            waitingForOwnerToSendData = false;
             int totalCount = 0;
             var descriptors = gun.descriptors;
             foreach (var descriptor in descriptors)

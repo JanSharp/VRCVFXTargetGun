@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c333ccfdd0cbdbc4ca30cef2dd6e6b9b, type: 3}
-  m_Name: MusicToggle
+  m_Name: MusicArea
   m_EditorClassIdentifier: 
   serializedUdonProgramAsset: {fileID: 11400000, guid: b69582b10f1d872c2a2401973935b937,
     type: 2}
@@ -21,7 +21,7 @@ MonoBehaviour:
   compiledVersion: 2
   behaviourSyncMode: 1
   hasInteractEvent: 0
-  scriptID: 5460689706740891199
+  scriptID: -2739530741504259107
   serializationData:
     SerializedFormat: 2
     SerializedBytes: 

@@ -1,6 +1,14 @@
 
 # Changelog
 
+## [1.1.0] - 2023-06-11
+
+### Changed
+
+- **Breaking:** Remove and change use of deprecated UdonSharp editor functions (`8d198de`)
+- **Breaking:** Use refactored OnBuildUtil (`17dbab8`)
+- Migrate to VRChat Creator Companion (`9ae838c`, `78b73b6`, `5507ce0`)
+
 ## [1.0.2] - 2022-09-05
 
 ### Fixed
@@ -31,11 +39,13 @@
 - Add syncing with interpolation (`bc5fbaa`, `22b4550`, `fe16657`)
 - Drop the grip when multiple people pick it up at the same time (`dce4ef4`)
 
+<!-- MovementGrip_v1.1.0 -->
 <!-- MovementGrip_v1.0.2 -->
 <!-- MovementGrip_v1.0.1 -->
 <!-- MovementGrip_v1.0.0 -->
 <!-- MovementGrip_v0.1.0 -->
 
+[1.1.0]: /dev/null
 [1.0.2]: /dev/null
 [1.0.1]: /dev/null
 [1.0.0]: /dev/null

@@ -1,6 +1,18 @@
 
 # Changelog
 
+## [1.1.0] - 2023-06-09
+
+### Changed
+
+- **Breaking:** Remove and change use of deprecated UdonSharp editor functions (`e72f369`)
+- **Breaking:** Use refactored OnBuildUtil (`17dbab8`, `e72f369`)
+- Migrate to VRChat Creator Companion (`9ae838c`, `78b73b6`)
+
+### Fixed
+
+- Fix late joiner syncing with related to VRChat's new server side caching (`a204797`, `6fafaef`, `74d6296`)
+
 ## [1.0.1] - 2022-09-03
 
 ### Changed
@@ -27,6 +39,10 @@
 - Support all kinds of rotations of the chalkboard (`1f46ec9`)
 - Make chalk pickup have fixed grip in desktop vs any grip in VR (`a4def30`)
 
+<!-- Chalkboard_v1.1.0 -->
+<!-- Chalkboard_v1.0.1 -->
 <!-- Chalkboard_v1.0.0 -->
 
+[1.1.0]: /dev/null
+[1.0.1]: /dev/null
 [1.0.0]: /dev/null

@@ -16,9 +16,6 @@ namespace JanSharp
 {
     [UdonBehaviourSyncMode(BehaviourSyncMode.Manual)]
     public class RotationGrip : UdonSharpBehaviour
-    #if UNITY_EDITOR && !COMPILER_UDONSHARP
-        , IOnBuildCallback
-    #endif
     {
         public Transform toRotate;
         [Tooltip("Maximum amount of degrees the object to rotate is allowed to deviate from the original local rotation. 180 and above means unlimited, 0 or below means not at all.")]
@@ -26,11 +23,11 @@ namespace JanSharp
         [Tooltip("When true the object To Rotate will only rotate around its up axis (the green arrow).")]
         public bool rotateAroundSingleAxis;
 
-        [SerializeField] [HideInInspector] private UpdateManager updateManager;
-        [SerializeField] [HideInInspector] private Transform dummyTransform;
-        [SerializeField] [HideInInspector] private VRC_Pickup pickup;
-        [SerializeField] [HideInInspector] private Quaternion initialLocalRotation;
-        [SerializeField] [HideInInspector] private float initialDistance;
+        [HideInInspector] public UpdateManager updateManager;
+        [HideInInspector] public Transform dummyTransform;
+        [HideInInspector] public VRC_Pickup pickup;
+        [HideInInspector] public Quaternion initialLocalRotation;
+        [HideInInspector] public float initialDistance;
         private float nextSyncTime;
         private const float SyncInterval = 0.2f;
         private const float LerpDuration = SyncInterval + 0.05f;
@@ -94,39 +91,13 @@ namespace JanSharp
         // for UpdateManager
         private int customUpdateInternalIndex;
 
-        #if UNITY_EDITOR && !COMPILER_UDONSHARP
-        [InitializeOnLoad]
-        public static class OnBuildRegister
-        {
-            static OnBuildRegister() => JanSharp.OnBuildUtil.RegisterType<RotationGrip>();
-        }
-        bool IOnBuildCallback.OnBuild()
-        {
-            pickup = GetComponent<VRC_Pickup>();
-            updateManager = GameObject.Find("/UpdateManager")?.GetUdonSharpComponent<UpdateManager>();
-            if (updateManager == null)
-            {
-                Debug.LogError("RotationGrip requires a GameObject that must be at the root of the scene "
-                    + "with the exact name 'UpdateManager' which has the 'UpdateManager' UdonBehaviour.");
-                return false;
-            }
-            initialLocalRotation = toRotate.localRotation;
-            maximumRotationDeviation = Mathf.Abs(maximumRotationDeviation);
-            dummyTransform = updateManager.transform;
-            initialDistance = toRotate.InverseTransformDirection(this.transform.position - toRotate.position).magnitude;
-            SnapBack();
-            this.ApplyProxyModifications();
-            return true;
-        }
-        #endif
-
         public void Snap(float distance)
         {
             this.transform.position = toRotate.position + toRotate.TransformDirection(Vector3.back * distance);
             this.transform.rotation = toRotate.rotation;
         }
 
-        private void SnapBack() => Snap(initialDistance);
+        public void SnapBack() => Snap(initialDistance);
 
         public override void OnPickup()
         {
@@ -393,6 +364,32 @@ namespace JanSharp
     }
 
     #if UNITY_EDITOR && !COMPILER_UDONSHARP
+
+    [InitializeOnLoad]
+    public static class RotationGripOnBuild
+    {
+        static RotationGripOnBuild() => JanSharp.OnBuildUtil.RegisterType<RotationGrip>(OnBuild);
+
+        private static bool OnBuild(UdonSharpBehaviour behaviour)
+        {
+            RotationGrip rotationGrip = (RotationGrip)behaviour;
+            rotationGrip.pickup = rotationGrip.GetComponent<VRC_Pickup>();
+            rotationGrip.updateManager = GameObject.Find("/UpdateManager")?.GetComponent<UpdateManager>();
+            if (rotationGrip.updateManager == null)
+            {
+                Debug.LogError("RotationGrip requires a GameObject that must be at the root of the scene "
+                    + "with the exact name 'UpdateManager' which has the 'UpdateManager' UdonBehaviour.");
+                return false;
+            }
+            rotationGrip.initialLocalRotation = rotationGrip.toRotate.localRotation;
+            rotationGrip.maximumRotationDeviation = Mathf.Abs(rotationGrip.maximumRotationDeviation);
+            rotationGrip.dummyTransform = rotationGrip.updateManager.transform;
+            rotationGrip.initialDistance = rotationGrip.toRotate.InverseTransformDirection(rotationGrip.transform.position - rotationGrip.toRotate.position).magnitude;
+            rotationGrip.SnapBack();
+            return true;
+        }
+    }
+
     [CustomEditor(typeof(RotationGrip))]
     public class RotationGripEditor : Editor
     {

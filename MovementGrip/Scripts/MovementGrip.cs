@@ -11,9 +11,6 @@ namespace JanSharp
 {
     [UdonBehaviourSyncMode(BehaviourSyncMode.Manual)]
     public class MovementGrip : UdonSharpBehaviour
-    #if UNITY_EDITOR && !COMPILER_UDONSHARP
-        , IOnBuildCallback
-    #endif
     {
         public Transform toMove;
         public bool allowMovementOnX;
@@ -26,19 +23,19 @@ namespace JanSharp
         public float maxForwardDeviation = float.PositiveInfinity;
         public float maxBackDeviation = float.PositiveInfinity;
 
-        [SerializeField] [HideInInspector] private UpdateManager updateManager;
-        [SerializeField] [HideInInspector] private VRC_Pickup pickup;
-        [SerializeField] [HideInInspector] private Vector3 targetInitialLocalPosition;
-        [SerializeField] [HideInInspector] private Vector3 thisInitialLocalPosition;
-        [SerializeField] [HideInInspector] private Quaternion rotationOffsetFromTargetToThis;
-        [SerializeField] [HideInInspector] private Vector3 positionOffsetFromTargetToThis;
+        [HideInInspector] public UpdateManager updateManager;
+        [HideInInspector] public VRC_Pickup pickup;
+        [HideInInspector] public Vector3 targetInitialLocalPosition;
+        [HideInInspector] public Vector3 thisInitialLocalPosition;
+        [HideInInspector] public Quaternion rotationOffsetFromTargetToThis;
+        [HideInInspector] public Vector3 positionOffsetFromTargetToThis;
         // for UpdateManager
         private int customUpdateInternalIndex;
 
         private float nextSyncTime;
         private const float SyncInterval = 0.2f;
         private const float LerpDuration = SyncInterval + 0.1f;
-        [UdonSynced] [SerializeField] [HideInInspector] private Vector3 syncedPosition;
+        [UdonSynced] [HideInInspector] public Vector3 syncedPosition;
         private float lastReceivedTime;
         private Vector3 lerpStartPosition;
         private bool receiving;
@@ -78,34 +75,6 @@ namespace JanSharp
             }
         }
 
-        #if UNITY_EDITOR && !COMPILER_UDONSHARP
-        [InitializeOnLoad]
-        public static class OnBuildRegister
-        {
-            static OnBuildRegister() => JanSharp.OnBuildUtil.RegisterType<MovementGrip>();
-        }
-        bool IOnBuildCallback.OnBuild()
-        {
-            pickup = GetComponent<VRC_Pickup>();
-            updateManager = GameObject.Find("/UpdateManager")?.GetUdonSharpComponent<UpdateManager>();
-            if (updateManager == null)
-            {
-                Debug.LogError("MovementGrip requires a GameObject that must be at the root of the scene "
-                        + "with the exact name 'UpdateManager' which has the 'UpdateManager' UdonBehaviour.",
-                    UdonSharpEditorUtility.GetBackingUdonBehaviour(this));
-                return false;
-            }
-            targetInitialLocalPosition = toMove.localPosition;
-            thisInitialLocalPosition = this.transform.localPosition;
-            syncedPosition = targetInitialLocalPosition;
-            positionOffsetFromTargetToThis = toMove.InverseTransformVector(this.transform.position - toMove.position);
-            rotationOffsetFromTargetToThis = Quaternion.Inverse(toMove.rotation) * this.transform.rotation;
-            SnapBack();
-            this.ApplyProxyModifications();
-            return true;
-        }
-        #endif
-
         private void Snap(Vector3 localOffset, Quaternion rotationOffset)
         {
             this.transform.SetPositionAndRotation(
@@ -114,7 +83,7 @@ namespace JanSharp
             );
         }
 
-        private void SnapBack() => Snap(positionOffsetFromTargetToThis, rotationOffsetFromTargetToThis);
+        public void SnapBack() => Snap(positionOffsetFromTargetToThis, rotationOffsetFromTargetToThis);
 
         public override void OnPickup()
         {
@@ -188,4 +157,33 @@ namespace JanSharp
             updateManager.Register(this);
         }
     }
+
+    #if UNITY_EDITOR && !COMPILER_UDONSHARP
+    [InitializeOnLoad]
+    public static class MovementGripOnBuild
+    {
+        static MovementGripOnBuild() => JanSharp.OnBuildUtil.RegisterType<MovementGrip>(OnBuild);
+
+        internal static bool OnBuild(UdonSharpBehaviour behaviour)
+        {
+            MovementGrip movementGrip = (MovementGrip)behaviour;
+            movementGrip.pickup = movementGrip.GetComponent<VRC_Pickup>();
+            movementGrip.updateManager = GameObject.Find("/UpdateManager")?.GetComponent<UpdateManager>();
+            if (movementGrip.updateManager == null)
+            {
+                Debug.LogError("MovementGrip requires a GameObject that must be at the root of the scene "
+                        + "with the exact name 'UpdateManager' which has the 'UpdateManager' UdonBehaviour.",
+                    UdonSharpEditorUtility.GetBackingUdonBehaviour(movementGrip));
+                return false;
+            }
+            movementGrip.targetInitialLocalPosition = movementGrip.toMove.localPosition;
+            movementGrip.thisInitialLocalPosition = movementGrip.transform.localPosition;
+            movementGrip.syncedPosition = movementGrip.targetInitialLocalPosition;
+            movementGrip.positionOffsetFromTargetToThis = movementGrip.toMove.InverseTransformVector(movementGrip.transform.position - movementGrip.toMove.position);
+            movementGrip.rotationOffsetFromTargetToThis = Quaternion.Inverse(movementGrip.toMove.rotation) * movementGrip.transform.rotation;
+            movementGrip.SnapBack();
+            return true;
+        }
+    }
+    #endif
 }

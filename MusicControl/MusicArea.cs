@@ -6,7 +6,7 @@ using VRC.Udon;
 namespace JanSharp
 {
     [UdonBehaviourSyncMode(BehaviourSyncMode.None)]
-    public class MusicToggle : UdonSharpBehaviour
+    public class MusicArea : UdonSharpBehaviour
     {
         public MusicDescriptor musicForThisArea;
         private uint id;

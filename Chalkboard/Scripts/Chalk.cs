@@ -12,9 +12,6 @@ namespace JanSharp
 {
     [UdonBehaviourSyncMode(BehaviourSyncMode.Manual)]
     public class Chalk : UdonSharpBehaviour
-    #if UNITY_EDITOR && !COMPILER_UDONSHARP
-        , IOnBuildCallback
-    #endif
     {
         [SerializeField] private VRC_Pickup pickup;
         [SerializeField] private Transform aimPoint;
@@ -23,8 +20,8 @@ namespace JanSharp
         [SerializeField] private Color color = Color.white;
         [SerializeField] private Transform indicator;
         [SerializeField] public bool isSponge;
-        [SerializeField] [HideInInspector] private UpdateManager updateManager;
-        [SerializeField] [HideInInspector] private ChalkboardManager chalkboardManager;
+        [HideInInspector] public UpdateManager updateManager;
+        [HideInInspector] public ChalkboardManager chalkboardManager;
         [HideInInspector] public int chalkId;
         // for UpdateManager
         private int customUpdateInternalIndex;
@@ -62,6 +59,7 @@ namespace JanSharp
         private const int IntUnusedAction = 0; // x + y
         private const int IntSwitchToBoardY = 1; // just y
         private const int IntAxisBits = 0x3ff;
+        private bool ignoreNextSync = true;
 
         private const float LateJoinerSyncDelay = 15f;
         private float lastTimeAPlayerJoined;
@@ -79,33 +77,6 @@ namespace JanSharp
         private Chalkboard lastSyncedChalkboard;
         private Chalkboard chalkboard;
         private Texture2D texture;
-
-        #if UNITY_EDITOR && !COMPILER_UDONSHARP
-        [InitializeOnLoad]
-        public static class OnBuildRegister
-        {
-            static OnBuildRegister() => JanSharp.OnBuildUtil.RegisterType<Chalk>();
-        }
-        bool IOnBuildCallback.OnBuild()
-        {
-            updateManager = GameObject.Find("/UpdateManager")?.GetUdonSharpComponent<UpdateManager>();
-            if (updateManager == null)
-                Debug.LogError("Chalk requires a GameObject that must be at the root of the scene"
-                        + " with the exact name 'UpdateManager' which has the 'UpdateManager' UdonBehaviour.",
-                    UdonSharpEditorUtility.GetBackingUdonBehaviour(this));
-
-            chalkboardManager = GameObject.Find("/ChalkboardManager")?.GetUdonSharpComponent<ChalkboardManager>();
-            chalkId = chalkboardManager?.GetChalkId(this) ?? -1;
-            if (chalkboardManager == null)
-                Debug.LogError("Chalk requires a GameObject that must be at the root of the scene"
-                        + " with the exact name 'ChalkboardManager' which has the 'ChalkboardManager' UdonBehaviour.",
-                    UdonSharpEditorUtility.GetBackingUdonBehaviour(this));
-
-            this.ApplyProxyModifications();
-            // EditorUtility.SetDirty(UdonSharpEditorUtility.GetBackingUdonBehaviour(this));
-            return updateManager != null && chalkboardManager != null;
-        }
-        #endif
 
         private void Start()
         {
@@ -207,6 +178,10 @@ namespace JanSharp
                 lastSyncedChalkboard.DrawLine(this, prevX, prevY, toX, toY);
             else
                 lastSyncedChalkboard.DrawPoint(this, toX, toY);
+            // Since this is the only time hasPrev gets set to true it is impossible to accidentally attempt to draw a line
+            // from 0 0 to the given coordinates, no matter the circumstances (specifically even when a joining player
+            // receives an action with hasPrev: true, it'll just draw a single point the first time.)
+            // This is important because not only would it look bad if that line was drawn, I think it would actually throw an exception.
             hasPrev = true;
             prevX = toX;
             prevY = toY;
@@ -224,15 +199,18 @@ namespace JanSharp
                 lastSyncedChalkboard = chalkboard;
                 return;
             }
+
             bool changedBoard = chalkboard != lastSyncedChalkboard || (lastTimeAPlayerJoined + LateJoinerSyncDelay) > Time.time;
             if ((changedBoard ? pointsStageCount + 1 : pointsStageCount) >= pointsStage.Length)
             {
                 var newPointsStage = new int[pointsStageCount * 2];
+                // Can't use CopyTo because the start of the queue/stage is not at the start of the array.
                 for (int i = 0; i < pointsStage.Length; i++)
                     newPointsStage[i] = pointsStage[(i + pointsStageStartIndex) % pointsStage.Length];
                 pointsStage = newPointsStage;
                 pointsStageStartIndex = 0;
             }
+
             if (changedBoard)
             {
                 lastSyncedChalkboard = chalkboard;
@@ -243,6 +221,7 @@ namespace JanSharp
                 pointsStage[(pointsStageStartIndex + (pointsStageCount++)) % pointsStage.Length]
                     = chalkboard.boardId | (IntSwitchToBoardY << AxisBitCount);
             }
+
             #if ChalkboardDebug
             Debug.Log($"<dlt> adding point x: {x}, y: {y}, hasPrev: {hasPrev}");
             #endif
@@ -271,7 +250,7 @@ namespace JanSharp
             Debug.Log($"<dlt> sending {System.Math.Min(pointsStageCount, 3)} actions");
             #endif
             syncedActions = 0UL;
-            if (pointsStageCount == 0)
+            if (pointsStageCount == 0 || ignoreNextSync)
                 return;
             for (int i = 0; i < System.Math.Min(pointsStageCount, 3); i++)
             {
@@ -299,10 +278,27 @@ namespace JanSharp
             #if ChalkboardDebug
             Debug.Log($"<dlt> on post: success: {result.success}, byteCount: {result.byteCount}");
             #endif
+            if (!result.success)
+            {
+                // If it wasn't successful, retry.
+                SendCustomEventDelayedSeconds(nameof(RequestSerializationDelayed), 10f);
+            }
+            else if (ignoreNextSync)
+            {
+                // If it was successful, and we're ignoring the next sync, unset the ignore flag and send as soon as possible.
+                ignoreNextSync = false;
+                SendCustomEventDelayedFrames(nameof(RequestSerializationDelayed), 1);
+            }
         }
 
         public override void OnDeserialization()
         {
+            if (ignoreNextSync)
+            {
+                ignoreNextSync = false;
+                return;
+            }
+
             bool doUpdateTexture = false;
             for (int i = 0; i < 3; i++)
             {
@@ -339,4 +335,36 @@ namespace JanSharp
                 lastSyncedChalkboard.UpdateTextureSlow();
         }
     }
+
+    #if UNITY_EDITOR && !COMPILER_UDONSHARP
+    [InitializeOnLoad]
+    internal static class ChalkOnBuild
+    {
+        static ChalkOnBuild() => JanSharp.OnBuildUtil.RegisterType<Chalk>(OnBuild);
+
+        private static bool OnBuild(UdonSharpBehaviour behaviour)
+        {
+            Chalk chalk = (Chalk)behaviour;
+            chalk.updateManager = GameObject.Find("/UpdateManager")?.GetComponent<UpdateManager>();
+            if (chalk.updateManager == null)
+                Debug.LogError("Chalk requires a GameObject that must be at the root of the scene"
+                        + " with the exact name 'UpdateManager' which has the 'UpdateManager' UdonBehaviour.",
+                    UdonSharpEditorUtility.GetBackingUdonBehaviour(chalk));
+
+            chalk.chalkboardManager = GameObject.Find("/ChalkboardManager")?.GetComponent<ChalkboardManager>();
+            if (chalk.chalkboardManager != null)
+                chalk.chalkId = ChalkboardManagerOnBuild.GetChalkId(chalk.chalkboardManager, chalk);
+            else
+                chalk.chalkId = -1;
+
+            if (chalk.chalkboardManager == null)
+                Debug.LogError("Chalk requires a GameObject that must be at the root of the scene"
+                        + " with the exact name 'ChalkboardManager' which has the 'ChalkboardManager' UdonBehaviour.",
+                    UdonSharpEditorUtility.GetBackingUdonBehaviour(chalk));
+
+            // EditorUtility.SetDirty(UdonSharpEditorUtility.GetBackingUdonBehaviour(this));
+            return chalk.updateManager != null && chalk.chalkboardManager != null;
+        }
+    }
+    #endif
 }
