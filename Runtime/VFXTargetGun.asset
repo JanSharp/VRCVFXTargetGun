@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c333ccfdd0cbdbc4ca30cef2dd6e6b9b, type: 3}
   m_Name: VFXTargetGun
   m_EditorClassIdentifier: 
-  serializedUdonProgramAsset: {fileID: 11400000, guid: 7ae6b734c084f569ebfcd10b4ea094a4,
+  serializedUdonProgramAsset: {fileID: 11400000, guid: 7937a1d1c27b84cfca2c26a2403b11b5,
     type: 2}
   udonAssembly: 
   assemblyError: 
@@ -2549,7 +2549,7 @@ MonoBehaviour:
       Data: 150|System.RuntimeType, mscorlib
     - Name: 
       Entry: 1
-      Data: JanSharp.EffectOrderSync, Assembly-CSharp
+      Data: JanSharp.EffectOrderSync, JanSharp.VFXTargetGun
     - Name: 
       Entry: 8
       Data: 
@@ -2604,7 +2604,7 @@ MonoBehaviour:
       Data: 153|System.RuntimeType, mscorlib
     - Name: 
       Entry: 1
-      Data: JanSharp.VFXTargetGunEffectsFullSync, Assembly-CSharp
+      Data: JanSharp.VFXTargetGunEffectsFullSync, JanSharp.VFXTargetGun
     - Name: 
       Entry: 8
       Data: 
@@ -2897,7 +2897,7 @@ MonoBehaviour:
       Data: 171|System.RuntimeType, mscorlib
     - Name: 
       Entry: 1
-      Data: JanSharp.EffectDescriptor[], Assembly-CSharp
+      Data: JanSharp.EffectDescriptor[], JanSharp.VFXTargetGun
     - Name: 
       Entry: 8
       Data: 
@@ -3068,7 +3068,7 @@ MonoBehaviour:
       Data: 181|System.RuntimeType, mscorlib
     - Name: 
       Entry: 1
-      Data: JanSharp.UpdateManager, Assembly-CSharp
+      Data: JanSharp.UpdateManager, JanSharp.Common
     - Name: 
       Entry: 8
       Data: 
@@ -3178,7 +3178,7 @@ MonoBehaviour:
       Data: 187|System.RuntimeType, mscorlib
     - Name: 
       Entry: 1
-      Data: JanSharp.EffectDescriptor, Assembly-CSharp
+      Data: JanSharp.EffectDescriptor, JanSharp.VFXTargetGun
     - Name: 
       Entry: 8
       Data: 

@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c333ccfdd0cbdbc4ca30cef2dd6e6b9b, type: 3}
   m_Name: VFXTargetGunPlaceDeleteModeToggle
   m_EditorClassIdentifier: 
-  serializedUdonProgramAsset: {fileID: 11400000, guid: 087d141df2cb5d52ebe60b8b9e9ce324,
+  serializedUdonProgramAsset: {fileID: 11400000, guid: f2d3aea8d147bd38cafa8a69468104a2,
     type: 2}
   udonAssembly: 
   assemblyError: 
@@ -62,7 +62,7 @@ MonoBehaviour:
       Data: 3|System.RuntimeType, mscorlib
     - Name: 
       Entry: 1
-      Data: JanSharp.VFXTargetGun, Assembly-CSharp
+      Data: JanSharp.VFXTargetGun, JanSharp.VFXTargetGun
     - Name: 
       Entry: 8
       Data: 

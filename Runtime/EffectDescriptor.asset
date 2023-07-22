@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c333ccfdd0cbdbc4ca30cef2dd6e6b9b, type: 3}
   m_Name: EffectDescriptor
   m_EditorClassIdentifier: 
-  serializedUdonProgramAsset: {fileID: 11400000, guid: 83fbfaca56902b032bc388fbb14efd32,
+  serializedUdonProgramAsset: {fileID: 11400000, guid: a5f1ade7301442eb9940750804086bb0,
     type: 2}
   udonAssembly: 
   assemblyError: 
@@ -702,7 +702,7 @@ MonoBehaviour:
       Data: 48|System.RuntimeType, mscorlib
     - Name: 
       Entry: 1
-      Data: JanSharp.EffectOrderSync, Assembly-CSharp
+      Data: JanSharp.EffectOrderSync, JanSharp.VFXTargetGun
     - Name: 
       Entry: 8
       Data: 
@@ -774,7 +774,7 @@ MonoBehaviour:
       Data: 54|System.RuntimeType, mscorlib
     - Name: 
       Entry: 1
-      Data: JanSharp.VFXTargetGun, Assembly-CSharp
+      Data: JanSharp.VFXTargetGun, JanSharp.VFXTargetGun
     - Name: 
       Entry: 8
       Data: 
@@ -1566,7 +1566,7 @@ MonoBehaviour:
       Data: 96|System.RuntimeType, mscorlib
     - Name: 
       Entry: 1
-      Data: JanSharp.EffectButtonData, Assembly-CSharp
+      Data: JanSharp.EffectButtonData, JanSharp.VFXTargetGun
     - Name: 
       Entry: 8
       Data: 

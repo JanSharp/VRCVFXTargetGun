@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c333ccfdd0cbdbc4ca30cef2dd6e6b9b, type: 3}
   m_Name: VFXTargetGunVisibilityManager
   m_EditorClassIdentifier: 
-  serializedUdonProgramAsset: {fileID: 11400000, guid: 33f6275b3feeba832a4c1ae6cadccf27,
+  serializedUdonProgramAsset: {fileID: 11400000, guid: 4ea68a26943345cdcb56bd5fef5f0290,
     type: 2}
   udonAssembly: 
   assemblyError: 
@@ -62,7 +62,7 @@ MonoBehaviour:
       Data: 3|System.RuntimeType, mscorlib
     - Name: 
       Entry: 1
-      Data: JanSharp.VFXTargetGun[], Assembly-CSharp
+      Data: JanSharp.VFXTargetGun[], JanSharp.VFXTargetGun
     - Name: 
       Entry: 8
       Data: 

@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c333ccfdd0cbdbc4ca30cef2dd6e6b9b, type: 3}
   m_Name: EffectButtonData
   m_EditorClassIdentifier: 
-  serializedUdonProgramAsset: {fileID: 11400000, guid: f74fd7c0a0238b56c9fc22ae1b3fdda1,
+  serializedUdonProgramAsset: {fileID: 11400000, guid: fe553405171bdcd6d9a2c642827a9179,
     type: 2}
   udonAssembly: 
   assemblyError: 
@@ -422,7 +422,7 @@ MonoBehaviour:
       Data: 21|System.RuntimeType, mscorlib
     - Name: 
       Entry: 1
-      Data: JanSharp.EffectDescriptor, Assembly-CSharp
+      Data: JanSharp.EffectDescriptor, JanSharp.VFXTargetGun
     - Name: 
       Entry: 8
       Data: 
