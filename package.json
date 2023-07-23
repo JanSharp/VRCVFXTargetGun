@@ -11,7 +11,7 @@
   },
   "license": "MIT",
   "vpmDependencies": {
-    "com.jansharp.common": ">=0.1.0",
+    "com.jansharp.common": ">=0.1.2",
     "com.vrchat.udonsharp": "^1.1.x"
   },
   "url": "https://github.com/JanSharp/VRCVFXTargetGun/releases/download/v0.4.1/com.jansharp.vfx-target-gun.zip",
