@@ -31,3 +31,7 @@ Effects
 The order of the children of the Effect Descriptor matters, and there must not be any more children than those 2.
 
 If the `EffectObject` contains particle systems it is automatically considered a particle effect and if any of them are loop effects it is considered a loop particle effect. Otherwise it is an object effect.
+
+**Important:** When making particle system effects, make sure to disable `Play On Awake`.
+
+**Important:** When making an object effect, make sure to deactivate the `EffectObject`.
