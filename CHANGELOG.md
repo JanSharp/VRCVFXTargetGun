@@ -1,6 +1,20 @@
 
 # Changelog
 
+## [0.4.3] - 2023-07-23
+
+### Changed
+
+- Disable UI in the gun prefab as that is the correct initial state ([`84aabe1`](https://github.com/JanSharp/VRCVFXTargetGun/commit/84aabe101284e182f283a94894e0033248300dae))
+
+### Added
+
+- Add notes about prefab variants and effect descriptors in readme ([`62ec53d`](https://github.com/JanSharp/VRCVFXTargetGun/commit/62ec53d7acc0a353eaaa9b8b09131702a9cfaf68))
+
+### Removed
+
+- Remove dev only test effects from the gun prefab ([`822fd45`](https://github.com/JanSharp/VRCVFXTargetGun/commit/822fd455f83613de938367c49704b48f691668c9))
+
 ## [0.4.2] - 2023-07-23
 
 ### Changed
@@ -154,6 +168,7 @@ _Initial release._
 - Add basic UI (`b99f245`)
 - Workaround for VRCInstantiate being weird (`4e4840e`)
 
+[0.4.3]: https://github.com/JanSharp/VRCVFXTargetGun/releases/tag/v0.4.3
 [0.4.2]: https://github.com/JanSharp/VRCVFXTargetGun/releases/tag/v0.4.2
 [0.4.1]: https://github.com/JanSharp/VRCVFXTargetGun/releases/tag/v0.4.1
 [0.4.0]: https://github.com/JanSharp/VRCVFXTargetGun/releases/tag/VFXTargetGun_v0.4.0
