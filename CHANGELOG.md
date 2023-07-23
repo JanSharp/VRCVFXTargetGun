@@ -144,19 +144,11 @@ _Initial release._
 - Add basic UI (`b99f245`)
 - Workaround for VRCInstantiate being weird (`4e4840e`)
 
-<!-- VFXTargetGun_v0.4.0 -->
-<!-- VFXTargetGun_v0.3.0 -->
-<!-- VFXTargetGun_v0.2.3 -->
-<!-- VFXTargetGun_v0.2.2 -->
-<!-- VFXTargetGun_v0.2.1 -->
-<!-- VFXTargetGun_v0.2.0 -->
-<!-- VFXTargetGun_v0.1.0 -->
-
 [0.4.1]: https://github.com/JanSharp/VRCVFXTargetGun/releases/tag/v0.4.1
-[0.4.0]: /dev/null
-[0.3.0]: /dev/null
-[0.2.3]: /dev/null
-[0.2.2]: /dev/null
-[0.2.1]: /dev/null
-[0.2.0]: /dev/null
-[0.1.0]: /dev/null
+[0.4.0]: https://github.com/JanSharp/VRCVFXTargetGun/releases/tag/VFXTargetGun_v0.4.0
+[0.3.0]: https://github.com/JanSharp/VRCVFXTargetGun/releases/tag/VFXTargetGun_v0.3.0
+[0.2.3]: https://github.com/JanSharp/VRCVFXTargetGun/releases/tag/VFXTargetGun_v0.2.3
+[0.2.2]: https://github.com/JanSharp/VRCVFXTargetGun/releases/tag/VFXTargetGun_v0.2.2
+[0.2.1]: https://github.com/JanSharp/VRCVFXTargetGun/releases/tag/VFXTargetGun_v0.2.1
+[0.2.0]: https://github.com/JanSharp/VRCVFXTargetGun/releases/tag/VFXTargetGun_v0.2.0
+[0.1.0]: https://github.com/JanSharp/VRCVFXTargetGun/releases/tag/VFXTargetGun_v0.1.0
