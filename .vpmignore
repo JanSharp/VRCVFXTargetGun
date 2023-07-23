@@ -1,3 +1,6 @@
 
+# Exclude the .blend and .blend1 files, plus their meta files
+Runtime/Models/VFXTargetGun.blend*
+
 Runtime/Dev/**/*
 Runtime/Dev.meta
