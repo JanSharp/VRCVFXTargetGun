@@ -1,0 +1,23 @@
+{
+    "name": "JanSharp.VFXTargetGun.Editor",
+    "references": [
+        "JanSharp.VFXTargetGun",
+        "JanSharp.Common",
+        "JanSharp.Common.Editor",
+        "UdonSharp.Runtime",
+        "UdonSharp.Editor",
+        "VRC.SDK3",
+        "VRC.SDKBase",
+        "VRC.Udon",
+        "Unity.TextMeshPro"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
