@@ -113,13 +113,11 @@ after that:
 
 
 
-# Version 0.2.4
+# missing features
 
-preview mode
-unify effects into one pool instead of per gun (test network racing somehow)
-toggle between just modifying stuff placed by this gun or literally everything
-deleting any effect in delete mode, not just the selected one. Nice point and click (maybe there is something smart to be done about loop effects so we don't have to iterate all active ones)
+- preview mode
+- unify effects into one pool instead of per gun (test network racing somehow)
+- toggle between just modifying stuff placed by this gun or literally everything
+- deleting any effect in delete mode, not just the selected one. Nice point and click (maybe there is something smart to be done about loop effects so we don't have to iterate all active ones)
 
-# Version 0.3.0
-
-edit mode
+- edit mode
