@@ -1,6 +1,17 @@
 
 # Changelog
 
+## [0.4.1] - 2023-07-23
+
+_First version of this package that is in the VCC listing._
+
+### Changed
+
+- **Breaking:** Separate VFX Target Gun into its own repo and make it VPM compatible ([`aa8eaa6`](https://github.com/JanSharp/VRCVFXTargetGun/commit/aa8eaa6fc0f21ab35cede4496ec90b7667da4c37), [`44d00c7`](https://github.com/JanSharp/VRCVFXTargetGun/commit/44d00c7d06cbb74101901930fe83c603d1ee85f3))
+- **Breaking:** Update OnBuildUtil and other general editor scripting, use SerializedObjects ([`de04745`](https://github.com/JanSharp/VRCVFXTargetGun/commit/de04745880f0ea37345b5fd4e54de94fe7f05368), [`ee4ffb5`](https://github.com/JanSharp/VRCVFXTargetGun/commit/ee4ffb5ffe6218097cd01b94becc93bafb6ad2ca))
+- Move EffectButton prefab into VFXTargetGun prefab ([`d6f876f`](https://github.com/JanSharp/VRCVFXTargetGun/commit/d6f876f07b190c0bdad212382e2a840f83bf1cc9))
+- Hide edit mode button as it doesn't do anything ([`b421fe2`](https://github.com/JanSharp/VRCVFXTargetGun/commit/b421fe26df7e6aafebf78746ee750fe53fc0a94a))
+
 ## [0.4.0] - 2023-06-15
 
 ### Changed
@@ -141,6 +152,7 @@ _Initial release._
 <!-- VFXTargetGun_v0.2.0 -->
 <!-- VFXTargetGun_v0.1.0 -->
 
+[0.4.1]: https://github.com/JanSharp/VRCVFXTargetGun/releases/tag/v0.4.1
 [0.4.0]: /dev/null
 [0.3.0]: /dev/null
 [0.2.3]: /dev/null
