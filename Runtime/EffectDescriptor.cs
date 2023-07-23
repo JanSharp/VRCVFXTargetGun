@@ -209,6 +209,7 @@ When this is true said second rotation is random."
         {
             var button = Instantiate(gun.ButtonPrefab);
             button.transform.SetParent(gun.ButtonGrid, false);
+            button.SetActive(true);
             buttonData = (EffectButtonData)button.GetComponent(typeof(UdonBehaviour));
             buttonData.descriptor = this;
             buttonData.text.text = effectName;
