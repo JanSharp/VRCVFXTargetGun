@@ -1,6 +1,6 @@
 {
   "name": "com.jansharp.vfx-target-gun",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "description": "Infrastructure for vfx and object placable in world at runtime using a handheld gun.",
   "displayName": "VFX Target Gun",
   "unity": "2019.4",
@@ -14,6 +14,6 @@
     "com.jansharp.common": ">=0.1.0",
     "com.vrchat.udonsharp": "^1.1.x"
   },
-  "url": "https://github.com/JanSharp/VRCVFXTargetGun/releases/download/v0.4.4/com.jansharp.vfx-target-gun.zip",
-  "changelogUrl": "https://github.com/JanSharp/VRCVFXTargetGun/blob/v0.4.4/CHANGELOG.md"
+  "url": "https://github.com/JanSharp/VRCVFXTargetGun/releases/download/v0.4.5/com.jansharp.vfx-target-gun.zip",
+  "changelogUrl": "https://github.com/JanSharp/VRCVFXTargetGun/blob/v0.4.5/CHANGELOG.md"
 }
