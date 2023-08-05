@@ -1,6 +1,23 @@
 
 # Changelog
 
+## [0.4.5] - 2023-08-05
+
+### Changed
+
+- Change LICENSE.txt to LICENSE.md so Unity sees it in the package manager window ([`727dee1`](https://github.com/JanSharp/VRCVFXTargetGun/commit/727dee1b1a3aa2d788aabdafc8b53b0856852857))
+- Include inactive objects when getting components ([`ac0522f`](https://github.com/JanSharp/VRCVFXTargetGun/commit/ac0522fddf58b938c059eefd182740b8b7be5e58))
+
+### Added
+
+- Add links to all old references in the changelog ([`b908058`](https://github.com/JanSharp/VRCVFXTargetGun/commit/b908058c5a5cfb8b10d047bffa64938fdad3adcd))
+- Add vpm dependency on `com.vrchat.worlds` for clarity ([`621f8aa`](https://github.com/JanSharp/VRCVFXTargetGun/commit/621f8aa8549fff06b34ed47f76638b2e48a5f333))
+
+### Fixed
+
+- Fix loop effects not being created if some are still fading out ([`e63759b`](https://github.com/JanSharp/VRCVFXTargetGun/commit/e63759b7d4f935cbd08947b5439acfbefafab83f))
+- Fix build error on publish ([`f3117de`](https://github.com/JanSharp/VRCVFXTargetGun/commit/f3117de40fa372ce7c6d64e681add8907089bf28))
+
 ## [0.4.4] - 2023-07-23
 
 ### Added
@@ -174,6 +191,7 @@ _Initial release._
 - Add basic UI ([`b99f245`](https://github.com/JanSharp/VRCVFXTargetGun/commit/b99f2458b5de112ad58a25d7d378e146fd7112fb))
 - Workaround for VRCInstantiate being weird ([`4e4840e`](https://github.com/JanSharp/VRCVFXTargetGun/commit/4e4840e50b88570484a528fd599ee78e6c26026c))
 
+[0.4.5]: https://github.com/JanSharp/VRCVFXTargetGun/releases/tag/v0.4.5
 [0.4.4]: https://github.com/JanSharp/VRCVFXTargetGun/releases/tag/v0.4.4
 [0.4.3]: https://github.com/JanSharp/VRCVFXTargetGun/releases/tag/v0.4.3
 [0.4.2]: https://github.com/JanSharp/VRCVFXTargetGun/releases/tag/v0.4.2
