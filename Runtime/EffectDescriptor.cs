@@ -333,7 +333,7 @@ When this is true said second rotation is random."
             }
 
             int index;
-            if (ActiveCount == MaxCount)
+            if ((ActiveCount + FadingOutCount) == MaxCount)
                 index = MaxCount; // this will end up growing the arrays and creating a new effect
             else
             {
