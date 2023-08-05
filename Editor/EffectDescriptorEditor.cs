@@ -53,7 +53,7 @@ namespace JanSharp
 
             Transform effectParent = descriptor.transform.GetChild(0);
             descriptorProxy.FindProperty(nameof(EffectDescriptor.originalEffectObject)).objectReferenceValue = effectParent.gameObject;
-            var particleSystems = effectParent.GetComponentsInChildren<ParticleSystem>();
+            var particleSystems = effectParent.GetComponentsInChildren<ParticleSystem>(true);
             descriptorProxy.FindProperty(nameof(EffectDescriptor.effectDuration)).floatValue = 0f;
 
             bool isObject = particleSystems.Length == 0;
@@ -102,7 +102,7 @@ namespace JanSharp
 
             if (isObject)
             {
-                var renderers = effectParent.GetComponentsInChildren<Renderer>();
+                var renderers = effectParent.GetComponentsInChildren<Renderer>(true);
                 Vector3 min = renderers.FirstOrDefault()?.bounds.min ?? effectParent.position - Vector3.one * 0.5f;
                 Vector3 max = renderers.FirstOrDefault()?.bounds.max ?? effectParent.position + Vector3.one * 0.5f;
                 foreach (Renderer renderer in renderers.Skip(1))
@@ -126,7 +126,7 @@ namespace JanSharp
                 descriptorProxy.FindProperty(nameof(EffectDescriptor.effectScale)).vector3Value
                     = Vector3.one * (max - min).magnitude * 1.0025f;
                 descriptorProxy.FindProperty(nameof(EffectDescriptor.doLimitDistance)).boolValue
-                    = effectParent.GetComponentsInChildren<Collider>().Any();
+                    = effectParent.GetComponentInChildren<Collider>(true) != null;
             }
             else
             {

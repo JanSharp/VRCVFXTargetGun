@@ -26227,6 +26227,12 @@ PrefabInstance:
       propertyPath: NetworkIDs.Array.data[12].gameObject
       value: 
       objectReference: {fileID: 612642602}
+    - target: {fileID: 8464459589408506562, guid: 8894fa7e4588a5c4fab98453e558847d,
+        type: 3}
+      propertyPath: serializedProgramAsset
+      value: 
+      objectReference: {fileID: 11400000, guid: 04707b9118a245ff499f4ff61ab89692,
+        type: 2}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 8894fa7e4588a5c4fab98453e558847d, type: 3}
 --- !u!21 &1816934310

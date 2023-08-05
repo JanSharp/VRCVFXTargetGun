@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c333ccfdd0cbdbc4ca30cef2dd6e6b9b, type: 3}
   m_Name: VFXTargetGunVisibilityManager
   m_EditorClassIdentifier: 
-  serializedUdonProgramAsset: {fileID: 11400000, guid: 4ea68a26943345cdcb56bd5fef5f0290,
+  serializedUdonProgramAsset: {fileID: 11400000, guid: e6995b0584e5bbc498cee1ba4d4d10dc,
     type: 2}
   udonAssembly: 
   assemblyError: 
