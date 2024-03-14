@@ -1,6 +1,17 @@
 
 # Changelog
 
+## [0.4.6] - 2023-10-12
+
+### Changed
+
+- Reset effects scroll sensitivity to 1 to hopefully get scrolling down to a reasonable speed ([`60971b2`](https://github.com/JanSharp/VRCVFXTargetGun/commit/60971b24d7034524a7b9b0988f6a4e7f9bfedb34))
+- Update vrc worlds dependency to 3.4.x ([`c565493`](https://github.com/JanSharp/VRCVFXTargetGun/commit/c5654931cec1778ae197b5d38cf9c879d324cead))
+
+### Removed
+
+- Remove udonsharp dependency as it has been merged into worlds ([`c565493`](https://github.com/JanSharp/VRCVFXTargetGun/commit/c5654931cec1778ae197b5d38cf9c879d324cead))
+
 ## [0.4.5] - 2023-08-05
 
 ### Changed
@@ -191,6 +202,7 @@ _Initial release._
 - Add basic UI ([`b99f245`](https://github.com/JanSharp/VRCVFXTargetGun/commit/b99f2458b5de112ad58a25d7d378e146fd7112fb))
 - Workaround for VRCInstantiate being weird ([`4e4840e`](https://github.com/JanSharp/VRCVFXTargetGun/commit/4e4840e50b88570484a528fd599ee78e6c26026c))
 
+[0.4.6]: https://github.com/JanSharp/VRCVFXTargetGun/releases/tag/v0.4.6
 [0.4.5]: https://github.com/JanSharp/VRCVFXTargetGun/releases/tag/v0.4.5
 [0.4.4]: https://github.com/JanSharp/VRCVFXTargetGun/releases/tag/v0.4.4
 [0.4.3]: https://github.com/JanSharp/VRCVFXTargetGun/releases/tag/v0.4.3
