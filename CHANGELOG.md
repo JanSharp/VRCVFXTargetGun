@@ -1,6 +1,16 @@
 
 # Changelog
 
+## [0.4.2] - 2023-07-23
+
+### Changed
+
+- Exclude blender files from published packages ([`3836a06`](https://github.com/JanSharp/VRCVFXTargetGun/commit/3836a06a5e313969d412bfee92316f846ceaf4ed))
+
+### Fixed
+
+- Fix tag links in changelog ([`58171be`](https://github.com/JanSharp/VRCVFXTargetGun/commit/58171be6689d31d14d09fbc7e27c5c61de15204b))
+
 ## [0.4.1] - 2023-07-23
 
 _First version of this package that is in the VCC listing._
@@ -144,19 +154,12 @@ _Initial release._
 - Add basic UI (`b99f245`)
 - Workaround for VRCInstantiate being weird (`4e4840e`)
 
-<!-- VFXTargetGun_v0.4.0 -->
-<!-- VFXTargetGun_v0.3.0 -->
-<!-- VFXTargetGun_v0.2.3 -->
-<!-- VFXTargetGun_v0.2.2 -->
-<!-- VFXTargetGun_v0.2.1 -->
-<!-- VFXTargetGun_v0.2.0 -->
-<!-- VFXTargetGun_v0.1.0 -->
-
+[0.4.2]: https://github.com/JanSharp/VRCVFXTargetGun/releases/tag/v0.4.2
 [0.4.1]: https://github.com/JanSharp/VRCVFXTargetGun/releases/tag/v0.4.1
-[0.4.0]: /dev/null
-[0.3.0]: /dev/null
-[0.2.3]: /dev/null
-[0.2.2]: /dev/null
-[0.2.1]: /dev/null
-[0.2.0]: /dev/null
-[0.1.0]: /dev/null
+[0.4.0]: https://github.com/JanSharp/VRCVFXTargetGun/releases/tag/VFXTargetGun_v0.4.0
+[0.3.0]: https://github.com/JanSharp/VRCVFXTargetGun/releases/tag/VFXTargetGun_v0.3.0
+[0.2.3]: https://github.com/JanSharp/VRCVFXTargetGun/releases/tag/VFXTargetGun_v0.2.3
+[0.2.2]: https://github.com/JanSharp/VRCVFXTargetGun/releases/tag/VFXTargetGun_v0.2.2
+[0.2.1]: https://github.com/JanSharp/VRCVFXTargetGun/releases/tag/VFXTargetGun_v0.2.1
+[0.2.0]: https://github.com/JanSharp/VRCVFXTargetGun/releases/tag/VFXTargetGun_v0.2.0
+[0.1.0]: https://github.com/JanSharp/VRCVFXTargetGun/releases/tag/VFXTargetGun_v0.1.0
