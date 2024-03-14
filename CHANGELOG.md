@@ -1,6 +1,12 @@
 
 # Changelog
 
+## [0.4.4] - 2023-07-23
+
+### Added
+
+- Add notes about required initial state for particle systems and object effects ([`48592ea`](https://github.com/JanSharp/VRCVFXTargetGun/commit/48592ea58ea6a1a5ef4125323b2b234eaa709171))
+
 ## [0.4.3] - 2023-07-23
 
 ### Changed
@@ -168,6 +174,7 @@ _Initial release._
 - Add basic UI (`b99f245`)
 - Workaround for VRCInstantiate being weird (`4e4840e`)
 
+[0.4.4]: https://github.com/JanSharp/VRCVFXTargetGun/releases/tag/v0.4.4
 [0.4.3]: https://github.com/JanSharp/VRCVFXTargetGun/releases/tag/v0.4.3
 [0.4.2]: https://github.com/JanSharp/VRCVFXTargetGun/releases/tag/v0.4.2
 [0.4.1]: https://github.com/JanSharp/VRCVFXTargetGun/releases/tag/v0.4.1
