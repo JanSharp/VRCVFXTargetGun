@@ -56,15 +56,16 @@ When this is true said second rotation is random."
                 placePreview = obj.transform;
                 placePreview.parent = this.transform;
                 // replace all materials
-                foreach (var renderer in placePreview.GetComponentsInChildren<Renderer>())
+                foreach (var renderer in placePreview.GetComponentsInChildren<Renderer>(true))
                 {
                     var materials = renderer.materials;
                     for (int i = 0; i < materials.Length; i++)
                         materials[i] = gun.placePreviewMaterial;
                     renderer.materials = materials;
                 }
-                // disable all colliders
-                foreach (var collider in placePreview.GetComponentsInChildren<Collider>())
+                // Disable all colliders (including already inactive ones, because I believe inactive doesn't
+                // necessarily mean the component is disabled, but the object or a parent is inactive.)
+                foreach (var collider in placePreview.GetComponentsInChildren<Collider>(true))
                     collider.enabled = false;
             }
             return placePreview;
@@ -104,7 +105,7 @@ When this is true said second rotation is random."
                 deletePreview = obj.transform;
                 deletePreview.parent = this.transform;
                 // replace all materials
-                foreach (var renderer in deletePreview.GetComponentsInChildren<Renderer>())
+                foreach (var renderer in deletePreview.GetComponentsInChildren<Renderer>(true))
                 {
                     var materials = renderer.materials;
                     for (int i = 0; i < materials.Length; i++)
@@ -377,7 +378,7 @@ When this is true said second rotation is random."
             effectTransform.parent = effectClonesParent;
             EffectParents[index] = effectTransform;
             if (HasParticleSystems)
-                ParticleSystems[index] = effectTransform.GetComponentsInChildren<ParticleSystem>();
+                ParticleSystems[index] = effectTransform.GetComponentsInChildren<ParticleSystem>(true);
             return effectTransform;
         }
 
@@ -416,7 +417,7 @@ When this is true said second rotation is random."
             }
 
             int index;
-            if (ActiveCount == MaxCount)
+            if ((ActiveCount + FadingOutCount) == MaxCount)
                 index = MaxCount; // this will end up growing the arrays and creating a new effect
             else
             {

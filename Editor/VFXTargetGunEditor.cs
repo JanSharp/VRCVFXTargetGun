@@ -32,7 +32,7 @@ namespace JanSharp
             SerializedObject vfxTargetGunProxy = new SerializedObject(vfxTargetGun);
             EditorUtil.SetArrayProperty(
                 vfxTargetGunProxy.FindProperty(nameof(VFXTargetGun.gunMeshRenderers)),
-                vfxTargetGun.gunMesh.GetComponentsInChildren<MeshRenderer>(),
+                vfxTargetGun.gunMesh.GetComponentsInChildren<MeshRenderer>(true),
                 (p, v) => p.objectReferenceValue = v
             );
 
