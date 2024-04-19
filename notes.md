@@ -165,5 +165,4 @@ I decided against toggling between just modifying stuff placed by the local play
 
 edit mode
 
-BUG: pickup gun, have UI closed, press F, delete something, press F, drop, click ball to open UI, it switches to delete mode?!
 BUG: neither shift nor control tab moves effect selection backwards

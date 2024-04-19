@@ -135,18 +135,16 @@ namespace JanSharp
                     else if (SelectedEffect == null)
                         laser.gameObject.SetActive(false);
 
-                switch (mode)
-                {
-                    case PlaceMode:
-                        placeModeToggle.SetIsOnWithoutNotify(true);
-                        break;
-                    case DeleteMode:
-                        deleteModeToggle.SetIsOnWithoutNotify(true);
-                        break;
-                    case EditMode:
-                        editModeToggle.SetIsOnWithoutNotify(true);
-                        break;
-                }
+                // Toggle groups, while inactive, do not update the is on state of other toggles in the group
+                // when one gets set to true (at least definitely not when using SetIsOnWithoutNotify(true),
+                // I've not tested using just isOn = true). Therefore this must update the state of all of the
+                // toggles to ensure that by the end only 1 is active. Otherwise the toggle group would update
+                // as soon as it gets activated again and choose 1 of the multiple that are active, which ends
+                // up raising the toggle changed event for the one that gets disabled which then updated the
+                // mode based on active toggles, making it effectively random (and closes the UI again)
+                placeModeToggle.SetIsOnWithoutNotify(mode == PlaceMode);
+                deleteModeToggle.SetIsOnWithoutNotify(mode == DeleteMode);
+                editModeToggle.SetIsOnWithoutNotify(mode == EditMode);
             }
         }
         public bool IsPlaceMode => Mode == PlaceMode;
