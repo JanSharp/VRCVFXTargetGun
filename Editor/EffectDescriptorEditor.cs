@@ -91,7 +91,6 @@ namespace JanSharp
         {
             SerializedObject descriptorProxy = new SerializedObject(descriptor);
             descriptorProxy.FindProperty(nameof(EffectDescriptor.gun)).objectReferenceValue = gun;
-            descriptorProxy.FindProperty(nameof(EffectDescriptor.orderSync)).objectReferenceValue = gun.OrderSync;
             descriptorProxy.FindProperty(nameof(EffectDescriptor.index)).intValue = index;
             descriptorProxy.ApplyModifiedProperties();
         }

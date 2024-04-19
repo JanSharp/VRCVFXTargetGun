@@ -4,6 +4,7 @@
         "JanSharp.VFXTargetGun",
         "JanSharp.Common",
         "JanSharp.Common.Editor",
+        "JanSharp.Lockstep",
         "UdonSharp.Runtime",
         "UdonSharp.Editor",
         "VRC.SDK3",

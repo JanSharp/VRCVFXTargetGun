@@ -2,6 +2,7 @@
     "name": "JanSharp.VFXTargetGun",
     "references": [
         "JanSharp.Common",
+        "JanSharp.Lockstep",
         "UdonSharp.Runtime",
         "VRC.SDK3",
         "VRC.SDKBase",

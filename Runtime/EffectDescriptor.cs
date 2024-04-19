@@ -11,11 +11,9 @@ namespace JanSharp
     {
         [HideInInspector] public string effectName;
         public string EffectName => effectName;
-        [Tooltip(
-@"The effect will always face away from/be parallel to the object it is placed on,
-however by default the effect also faces away from the gun as much as possible.
-When this is true said second rotation is random."
-        )]
+        [Tooltip("The effect will always face away from/be parallel to the object it is placed on, "
+            + "however by default the effect also faces away from the gun as much as possible. "
+            + "When this is true said second rotation is random.")]
         public bool randomizeRotation;
 
         // set OnBuild
@@ -27,7 +25,6 @@ When this is true said second rotation is random."
         [SerializeField] [HideInInspector] public Vector3 effectLocalCenter;
         [SerializeField] [HideInInspector] public Vector3 effectScale;
         [SerializeField] [HideInInspector] public bool doLimitDistance;
-        [SerializeField] [HideInInspector] public EffectOrderSync orderSync;
         [SerializeField] [HideInInspector] public VFXTargetGun gun;
         [SerializeField] [HideInInspector] public int index;
         public int Index => index;
@@ -116,10 +113,11 @@ When this is true said second rotation is random."
             return deletePreview;
         }
 
-        [HideInInspector] public Quaternion nextRandomRotation;
+        [HideInInspector] [System.NonSerialized] public Quaternion nextRandomRotation;
         public Transform[] EffectParents { get; private set; }
         public ParticleSystem[][] ParticleSystems { get; private set; }
         public bool[] ActiveEffects { get; private set; } // NOTE: whenever setting an effect to inactive also SetLastActionWasByLocalPlayer to false
+        public uint[] ActiveEffectIds { get; private set; }
         public bool[] LastActionWasByLocalPlayer { get; private set; }
         private void SetLastActionWasByLocalPlayer(int index, bool value)
         {
@@ -132,8 +130,7 @@ When this is true said second rotation is random."
                 LastActionWasByLocalPlayer[index] = value;
             }
         }
-        private byte[] lastPerformedActions;
-        private bool[] fadingOut;
+        public bool[] FadingOut { get; private set; }
         public int MaxCount { get; private set; }
         private int fadingOutCount;
         private int FadingOutCount
@@ -270,15 +267,11 @@ When this is true said second rotation is random."
             if (HasParticleSystems)
                 ParticleSystems = new ParticleSystem[4][];
             ActiveEffects = new bool[4];
+            ActiveEffectIds = new uint[4];
             LastActionWasByLocalPlayer = new bool[4];
-            lastPerformedActions = new byte[4];
             if (IsLoop)
-                fadingOut = new bool[4];
+                FadingOut = new bool[4];
             toFinishIndexes = new int[4];
-            // syncing
-            EffectOrder = new uint[4];
-            requestedSyncs = new bool[4];
-            requestedIndexes = new int[4];
             MaxCount = 4;
         }
 
@@ -321,31 +314,21 @@ When this is true said second rotation is random."
             var newActiveEffects = new bool[newLength];
             ActiveEffects.CopyTo(newActiveEffects, 0);
             ActiveEffects = newActiveEffects;
+            var newActiveEffectIds = new uint[newLength];
+            ActiveEffectIds.CopyTo(newActiveEffectIds, 0);
+            ActiveEffectIds = newActiveEffectIds;
             var newPlacedByLocalPlayer = new bool[newLength];
             LastActionWasByLocalPlayer.CopyTo(newPlacedByLocalPlayer, 0);
             LastActionWasByLocalPlayer = newPlacedByLocalPlayer;
-            var newLastPerformedActions = new byte[newLength];
-            lastPerformedActions.CopyTo(newLastPerformedActions, 0);
-            lastPerformedActions = newLastPerformedActions;
             if (IsLoop)
             {
                 var newFadingOut = new bool[newLength];
-                fadingOut.CopyTo(newFadingOut, 0);
-                fadingOut = newFadingOut;
+                FadingOut.CopyTo(newFadingOut, 0);
+                FadingOut = newFadingOut;
             }
             var newToFinishIndexes = new int[newLength];
             toFinishIndexes.CopyTo(newToFinishIndexes, 0);
             toFinishIndexes = newToFinishIndexes;
-            // syncing
-            var newEffectOrder = new uint[newLength];
-            EffectOrder.CopyTo(newEffectOrder, 0);
-            EffectOrder = newEffectOrder;
-            var newRequestedSyncs = new bool[newLength];
-            requestedSyncs.CopyTo(newRequestedSyncs, 0);
-            requestedSyncs = newRequestedSyncs;
-            var newRequestedIndexes = new int[newLength];
-            requestedIndexes.CopyTo(newRequestedIndexes, 0);
-            requestedIndexes = newRequestedIndexes;
         }
 
         private void EnsureIsInRange(int index)
@@ -354,8 +337,6 @@ When this is true said second rotation is random."
             {
                 while (index >= MaxCount)
                     MaxCount *= 2;
-                if (MaxCount > ushort.MaxValue)
-                    Debug.LogError($"There can only be up to {ushort.MaxValue} active effects in the world (effect name: {EffectName}).", this);
                 GrowArrays(MaxCount);
             }
         }
@@ -407,14 +388,10 @@ When this is true said second rotation is random."
             return result;
         }
 
-        public int PlayEffect(Vector3 position, Quaternion rotation, bool isManualPlacement)
+        public int PlayEffect(uint effectId, Vector3 position, Quaternion rotation, bool isByLocalPlayer)
         {
-            Debug.Log($"<dlt> PlayEffect {(isManualPlacement ? "(manual)" : "(collision)")}");
-            if (randomizeRotation && isManualPlacement)
-            {
-                rotation = rotation * nextRandomRotation;
+            if (randomizeRotation && isByLocalPlayer)
                 nextRandomRotation = Quaternion.AngleAxis(Random.Range(0f, 360f), Vector3.forward);
-            }
 
             int index;
             if ((ActiveCount + FadingOutCount) == MaxCount)
@@ -425,15 +402,14 @@ When this is true said second rotation is random."
                 index = 0; // just to make C# compile, since the below loop should always find an index anyway
                 // find first inactive effect
                 for (int i = 0; i < MaxCount; i++)
-                    if (!ActiveEffects[i] && (!IsLoop || !fadingOut[i]))
+                    if (!ActiveEffects[i] && (!IsLoop || !FadingOut[i]))
                     {
                         index = i;
                         break;
                     }
             }
-            PlayEffectInternal(index, position, rotation);
-            RequestSyncForIndex(index);
-            if (isManualPlacement)
+            PlayEffectInternal(effectId, index, position, rotation);
+            if (isByLocalPlayer)
                 SetLastActionWasByLocalPlayer(index, true);
             return index;
         }
@@ -456,13 +432,6 @@ When this is true said second rotation is random."
 
         public void StopToggleEffect(int index)
         {
-            StopToggleEffectInternal(index);
-            RequestSyncForIndex(index);
-        }
-
-        private void StopToggleEffectInternal(int index)
-        {
-            lastPerformedActions[index] = DeleteActionType;
             SetLastActionWasByLocalPlayer(index, false);
             if (!ActiveEffects[index])
                 return;
@@ -470,7 +439,7 @@ When this is true said second rotation is random."
             ActiveCount--;
             if (IsLoop)
             {
-                fadingOut[index] = true;
+                FadingOut[index] = true;
                 FadingOutCount++;
                 foreach (var ps in ParticleSystems[index])
                     ps.Stop();
@@ -484,11 +453,10 @@ When this is true said second rotation is random."
                 EffectParents[index].gameObject.SetActive(false);
         }
 
-        private void PlayEffectInternal(int index, Vector3 position, Quaternion rotation)
+        private void PlayEffectInternal(uint effectId, int index, Vector3 position, Quaternion rotation)
         {
             var effectTransform = GetEffectAtIndex(index);
-            lastPerformedActions[index] = PlaceActionType;
-            SetLastActionWasByLocalPlayer(index, false);
+            ActiveEffectIds[index] = effectId;
             if (ActiveEffects[index])
                 return;
             ActiveCount++;
@@ -527,7 +495,7 @@ When this is true said second rotation is random."
             toFinishCount--;
             if (IsLoop)
             {
-                fadingOut[index] = false;
+                FadingOut[index] = false;
                 FadingOutCount--;
             }
             else // IsOnce
@@ -535,331 +503,6 @@ When this is true said second rotation is random."
                 ActiveCount--;
                 ActiveEffects[index] = false;
             }
-        }
-
-
-
-        // incremental syncing
-        public uint[] EffectOrder { get; private set; }
-        private bool[] requestedSyncs;
-        private int[] requestedIndexes;
-        private int requestedCount;
-        /// <summary>
-        /// <para>bytes from left to right (big endian):</para>
-        /// <para>1: gun effect index / id (only used for late joiner syncing)</para>
-        /// <para>2, 3: effect index</para>
-        /// <para>4, 5: time (fixed point, need to determine where the "point" is)</para>
-        /// <para>the first bit of byte 6: active</para>
-        /// <para>the rest of 6, 7, 8: order</para>
-        /// </summary>
-        [UdonSynced] private ulong[] syncedData;
-        [UdonSynced] private Vector3[] syncedPositions;
-        [UdonSynced] private Quaternion[] syncedRotations;
-        private const ulong GunEffectIndexBits = 0xff00000000000000UL;
-        private const ulong    EffectIndexBits = 0x00ffff0000000000UL;
-        private const ulong           TimeBits = 0x000000ffff000000UL;
-        private const ulong     ActionTypeBits = 0x0000000000c00000UL;
-        private const ulong          OrderBits = 0x00000000003fffffUL;
-        private const int GunEffectIndexBitShift = 8 * 7;
-        private const int EffectIndexBitShift = 8 * 5;
-        private const int TimeBitShift = 8 * 3;
-        private const int ActionTypeBitShift = 8 * 3 - 2;
-        private const float TimePointShift = 256f; // like a shift of 8 bits
-        private const float MaxLoopDelay = 0.1f;
-        private const float MaxDelay = 0.5f;
-        private const float StaleEffectTime = 15f;
-        private Vector3[] delayedPositions;
-        private Quaternion[] delayedRotations;
-        private int delayedCount;
-
-        private bool incrementalSyncingInitialized;
-        private void InitIncrementalSyncing()
-        {
-            if (incrementalSyncingInitialized)
-                return;
-            incrementalSyncingInitialized = true;
-            delayedPositions = new Vector3[4];
-            delayedRotations = new Quaternion[4];
-        }
-
-        // action type is 2 bits big, so 4 values
-        private const byte DeleteActionType = 0b00;
-        private const byte PlaceActionType = 0b01;
-        public byte GetPlaceActionType() => PlaceActionType;
-        private const byte EditActionType = 0b10;
-        /// <summary>
-        /// Special action type used in network race conditions.
-        /// Behaves like an edit action, except when the effect at the given index isn't active
-        /// said effect gets created instead of the action getting ignored.
-        /// </summary>
-        private const byte PlaceOrEditActionType = PlaceActionType | EditActionType;
-
-        private void RequestSyncForIndex(int index)
-        {
-            MarkIndexForSync(index);
-            RequestSync();
-        }
-        private void MarkIndexForSync(int index)
-        {
-            // Full sync relies on this too, so update it even if we are alone.
-            if (localPlayerIsAlone)
-                EffectOrder[index] = ++orderSync.currentTopOrder;
-
-            if (requestedSyncs[index])
-                return;
-            Debug.Log($"<dlt> Requesting sync for index {index}.");
-            // Otherwise only set the order if it's not already been requested.
-            EffectOrder[index] = ++orderSync.currentTopOrder;
-            requestedSyncs[index] = true;
-            requestedIndexes[requestedCount++] = index;
-        }
-        private bool requestedSync;
-        public void RequestSync()
-        {
-            var localPlayer = Networking.LocalPlayer;
-            Networking.SetOwner(localPlayer, orderSync.gameObject);
-            Networking.SetOwner(localPlayer, this.gameObject);
-            RequestSerialization();
-            requestedSync = true;
-        }
-
-        public ulong CombineSyncedData(byte gunEffectIndex, int effectIndex, float time, byte actionType, uint order)
-        {
-            return ((((ulong)gunEffectIndex) << GunEffectIndexBitShift) & GunEffectIndexBits) // gun effect index
-                | ((((ulong)effectIndex) << EffectIndexBitShift) & EffectIndexBits) // effect index
-                | (HasParticleSystems ? ((((ulong)(time * TimePointShift)) << TimeBitShift) & TimeBits) : 0UL) // time
-                | ((((ulong)actionType) << ActionTypeBitShift) & ActionTypeBits) // action type
-                | (((ulong)order) & OrderBits); // order
-        }
-
-        public override void OnPreSerialization()
-        {
-            requestedSync = false;
-            // nothing to sync
-            if (!effectInitialized || requestedCount == 0)
-            {
-                // if they haven't been initialized the arrays should already be null
-                // but when they are public unity seems to make them empty arrays by default
-                // and there could be some ownership transfer which could then cause it to resync
-                // everything every time someone joins, so setting them to null even if it's not
-                // been initialized yet is the safe way and potentially even correct way
-
-                // NOTE: setting any array to null causes the serialization request to be dropped completely.
-                // not sure if this is intended however it works nicely for this use case where I quite literally
-                // do not want it to sync anything. If this is a bug and it gets fixed at some point then
-                // the synced variables need to be moved to a separate script (I think anyway) and then that game
-                // object needs to be disabled to prevent any syncing from happening (I only _think_ it needs to be
-                // on a separate script because I really do not know how inactive UdonBehaviours behave in general)
-                syncedData = null;
-                syncedPositions = null;
-                syncedRotations = null;
-                return;
-            }
-            if (syncedPositions == null || syncedPositions.Length != requestedCount)
-            {
-                syncedData = new ulong[requestedCount];
-                syncedPositions = new Vector3[requestedCount];
-                syncedRotations = new Quaternion[requestedCount];
-            }
-            var time = Time.time;
-            var order = ++orderSync.currentTopOrder;
-            for (int i = 0; i < requestedCount; i++)
-            {
-                var effectIndex = requestedIndexes[i];
-                EffectOrder[effectIndex] = order;
-                var effectTransform = EffectParents[effectIndex];
-                var effectTime = HasParticleSystems ? ParticleSystems[effectIndex][0].time : 0f;
-                var actionType = lastPerformedActions[effectIndex];
-                Debug.Log($"<dlt> Syncing order {order}, index {requestedIndexes[i]}, action type {actionType}.");
-                syncedData[i] = CombineSyncedData(0, effectIndex, effectTime, actionType, order);
-                syncedPositions[i] = effectTransform.position;
-                syncedRotations[i] = effectTransform.rotation;
-                requestedSyncs[effectIndex] = false;
-            }
-            requestedCount = 0;
-        }
-
-        private bool hasEditCollision = false;
-        public override void OnDeserialization()
-        {
-            Debug.Log("<dlt> OnDeserialization");
-            if (requestedSync)
-            {
-                // Debug.Log("<dlt> Requested sync but received data instead.");
-                RequestSync();
-            }
-            int syncedCount;
-            if (syncedPositions == null || (syncedCount = syncedData.Length) == 0) // should never be 0 but I don't want to think about it right now
-                return;
-            for (int i = 0; i < syncedCount; i++)
-                ProcessReceivedData(syncedData[i], syncedPositions[i], syncedRotations[i], false);
-
-            for (int i = 0; i < delayedCount; i++)
-            {
-                int effectIndex = PlayEffect(delayedPositions[i], delayedRotations[i], false);
-                lastPerformedActions[effectIndex] = PlaceOrEditActionType;
-            }
-            delayedCount = 0;
-            if (hasEditCollision)
-            {
-                SendCustomEventDelayedSeconds(nameof(RequestSync), Random.Range(0.25f, 1.5f));
-                hasEditCollision = false;
-            }
-        }
-
-        public void ProcessReceivedData(ulong data, Vector3 position, Quaternion rotation, bool cameFromFullSync)
-        {
-            InitEffect();
-            InitIncrementalSyncing();
-            int effectIndex = (int)((data & EffectIndexBits) >> EffectIndexBitShift);
-            uint order = (uint)(data & OrderBits);
-            EnsureIsInRange(effectIndex);
-            byte actionType = (byte)((data & ActionTypeBits) >> ActionTypeBitShift);
-            Debug.Log($"<dlt> Receiving order {order}, index {effectIndex}, action type {actionType}.");
-            bool orderCollision = false;
-            if (EffectOrder[effectIndex] >= order)
-            {
-                if (cameFromFullSync)
-                {
-                    Debug.Log($"<dlt> Aborting because of higher or equal current order {EffectOrder[effectIndex]}.");
-                    return;
-                }
-                else
-                {
-                    // used to determine if an edit action was a collision
-                    orderCollision = true;
-                }
-            }
-            EffectOrder[effectIndex] = order;
-            if (order > orderSync.currentTopOrder)
-            {
-                // doesn't need to set owner because someone else is already guaranteed to be the owner
-                // of the orderSync object who has the same or a higher currentTopOrder
-                orderSync.currentTopOrder = order;
-            }
-
-            if (actionType == DeleteActionType)
-            {
-                // no collision resolution for delete actions, delete actions just always win
-                StopToggleEffectInternal(effectIndex);
-                return;
-            }
-
-            if ((actionType & PlaceActionType) != 0)
-            {
-                if (ActiveEffects[effectIndex])
-                {
-                    // only consider `PlaceActionType` actions to be collisions, not `PlaceOrEditActionType`
-                    // because `PlaceOrEditActionType` only get created by a player that wasn't the local player
-                    // placing an effect, which means if we consider it to be a collision and create another effect here
-                    // then it would result in potentially infinite loops of creating more effects at the same location
-                    if (actionType == PlaceActionType)
-                    {
-                        Debug.Log($"<dlt> !! ^ Place Collision ^ !!");
-                        if (delayedCount == delayedPositions.Length)
-                            GrowDelayedArrays();
-                        delayedPositions[delayedCount] = position;
-                        delayedRotations[delayedCount++] = rotation;
-                        lastPerformedActions[effectIndex] = EditActionType;
-                        RequestSyncForIndex(effectIndex);
-                        return;
-                    }
-                }
-                else
-                {
-                    float effectTime = ((float)((data & TimeBits) >> TimeBitShift)) / TimePointShift;
-                    // prevent old once effects from playing, specifically for late joiners
-                    if (!IsOnce || effectTime < effectDuration + StaleEffectTime)
-                    {
-                        PlayEffectInternal(effectIndex, position, rotation);
-                        if (IsLoop)
-                        {
-                            float time = Mathf.Max(0f, effectTime - MaxLoopDelay);
-                            if (time > 0f)
-                                foreach (var ps in ParticleSystems[effectIndex])
-                                    ps.time = time;
-                        }
-                    }
-                    return;
-                }
-            }
-            // the only time the block above doesn't early return is for `PlaceOrEditActionType` actions where the effect already existed
-            // (in which case it needs to be edited, not created, which is why it is continuing to down below)
-
-            if ((actionType & EditActionType) != 0 && ActiveEffects[effectIndex])
-            {
-                lastPerformedActions[effectIndex] = EditActionType;
-                SetLastActionWasByLocalPlayer(index, false);
-                if (orderCollision)
-                {
-                    // handle edit collisions, including for `PlaceOrEditActionType` actions by simply marking this effect for sync again
-                    // but requesting sync in a random point in time in the future (handled in OnDeserialization)
-                    Debug.Log($"<dlt> !! ^ Edit Collision ^ !!");
-                    MarkIndexForSync(effectIndex);
-                    hasEditCollision = true;
-                }
-                EffectParents[effectIndex].SetPositionAndRotation(position, rotation);
-            }
-        }
-
-        private void GrowDelayedArrays()
-        {
-            int newLength = delayedPositions.Length * 2;
-            var newDelayedPositions = new Vector3[newLength];
-            delayedPositions.CopyTo(newDelayedPositions, 0);
-            delayedPositions = newDelayedPositions;
-            var newDelayedRotations = new Quaternion[newLength];
-            delayedRotations.CopyTo(newDelayedRotations, 0);
-            delayedRotations = newDelayedRotations;
-        }
-
-        private int currentPlayerCount;
-        private int CurrentPlayerCount
-        {
-            get => currentPlayerCount;
-            set
-            {
-                currentPlayerCount = value;
-                localPlayerIsAlone = value <= 1;
-            }
-        }
-        private bool localPlayerIsAlone = true;
-        private int requestSerializationCount = 0;
-        private bool waitingForOwnerToSendData = false;
-
-        public override void OnPlayerJoined(VRCPlayerApi player)
-        {
-            CurrentPlayerCount++;
-            if (Networking.IsOwner(this.gameObject))
-            {
-                requestSerializationCount++;
-                SendCustomEventDelayedSeconds(nameof(RequestSerializationDelayed), 9f);
-            }
-            else
-            {
-                waitingForOwnerToSendData = true;
-            }
-        }
-
-        public override void OnPlayerLeft(VRCPlayerApi player)
-        {
-            CurrentPlayerCount--;
-        }
-
-        public override void OnOwnershipTransferred(VRCPlayerApi player)
-        {
-            Debug.Log($"<dlt> Transferred owner to {Networking.LocalPlayer.displayName} (the parameter says: {player.displayName})");
-            if (waitingForOwnerToSendData && Networking.IsOwner(this.gameObject))
-            {
-                requestSerializationCount++;
-                SendCustomEventDelayedSeconds(nameof(RequestSerializationDelayed), 9f);
-            }
-        }
-
-        public void RequestSerializationDelayed()
-        {
-            if ((--requestSerializationCount) == 0)
-                RequestSerialization();
         }
     }
 }

@@ -4,12 +4,24 @@ using UnityEngine.UI;
 using VRC.SDKBase;
 using VRC.Udon;
 using TMPro;
+using VRC.SDK3.Data;
 
 namespace JanSharp
 {
     [UdonBehaviourSyncMode(BehaviourSyncMode.None)]
-    public class VFXTargetGun : UdonSharpBehaviour
+    public class VFXTargetGun : LockstepGameState
     {
+        public override string GameStateInternalName => "jansharp.vfx-target-gun";
+        public override string GameStateDisplayName => "VFX Target Gun";
+        public override bool GameStateSupportsImportExport => false;
+        public override uint GameStateDataVersion => 0u;
+        public override uint GameStateLowestSupportedDataVersion => 0u;
+        [HideInInspector] public Lockstep lockstep;
+        private uint lockstepPlayerId;
+        private uint localPlayerId;
+
+        private uint nextEffectId = 1u;
+
         [Header("Configuration")]
         [SerializeField] public Transform effectsParent;
         [SerializeField] private float maxDistance = 250f;
@@ -66,9 +78,6 @@ namespace JanSharp
         [SerializeField] private Toggle placePreviewToggle;
         [SerializeField] private Toggle deletePreviewToggle;
         [SerializeField] private Toggle editPreviewToggle;
-        public EffectOrderSync orderSync;
-        public EffectOrderSync OrderSync => orderSync;
-        [SerializeField] private VFXTargetGunEffectsFullSync fullSync;
         [SerializeField] public Material placePreviewMaterial;
         [SerializeField] public Material deletePreviewMaterial;
         [SerializeField] public Material highlightMaterial;
@@ -552,6 +561,7 @@ namespace JanSharp
 
         private void Start()
         {
+            localPlayerId = (uint)Networking.LocalPlayer.playerId;
             IsVisible = initialVisibility;
         }
 
@@ -675,7 +685,7 @@ namespace JanSharp
         {
             // TODO: spread work out across frames (probably)
             foreach (var descriptor in descriptors)
-                descriptor.StopAllEffects(true);
+                StopAllLocalEffectsForOneDescriptor(descriptor);
         }
 
         public void DeleteEverythingGlobal()
@@ -688,9 +698,7 @@ namespace JanSharp
         }
         public void ConfirmDeleteEverythingGlobal()
         {
-            // TODO: spread work out across frames (probably)
-            foreach (var descriptor in descriptors)
-                descriptor.StopAllEffects(false);
+            SendStopAllEffectsIA();
         }
 
         public void ShowHelp() => helpWindow.gameObject.SetActive(true);
@@ -722,7 +730,10 @@ namespace JanSharp
             {
                 if (IsPlaceIndicatorActive)
                 {
-                    SelectedEffect.PlayEffect(placeIndicator.position, placeIndicator.rotation, true);
+                    Quaternion rotation = placeIndicator.rotation;
+                    if (selectedEffect.randomizeRotation)
+                        rotation *= selectedEffect.nextRandomRotation;
+                    SendPlayEffectIA(SelectedEffect.Index, placeIndicator.position, rotation);
                     IsPlaceIndicatorActive = false;
                 }
             }
@@ -730,7 +741,7 @@ namespace JanSharp
             {
                 if (IsDeleteIndicatorActive)
                 {
-                    DeleteTargetEffectDescriptor.StopToggleEffect(DeleteTargetIndex);
+                    SendStopEffectIA(DeleteTargetEffectDescriptor.Index, DeleteTargetEffectDescriptor.ActiveEffectIds[DeleteTargetIndex]);
                     IsDeleteIndicatorActive = false;
                 }
             }
@@ -1044,6 +1055,142 @@ namespace JanSharp
                 IsHighlightActive = false;
                 IsDeleteIndicatorActive = false;
             }
+        }
+
+        private void SendPlayEffectIA(int descriptorIndex, Vector3 position, Quaternion rotation)
+        {
+            lockstep.WriteSmall((uint)descriptorIndex);
+            lockstep.Write(position);
+            lockstep.Write(rotation);
+            lockstep.SendInputAction(playEffectIAId);
+        }
+
+        [SerializeField] [HideInInspector] private uint playEffectIAId;
+        [LockstepInputAction(nameof(playEffectIAId))]
+        public void OnPlayEffectIA()
+        {
+            if (!initialized)
+                Init();
+            int descriptorIndex = (int)lockstep.ReadSmallUInt();
+            Vector3 position = lockstep.ReadVector3();
+            Quaternion rotation = lockstep.ReadQuaternion();
+            uint effectId = nextEffectId++;
+            // NOTE: time of loop effects
+            EffectDescriptor descriptor = descriptors[descriptorIndex];
+            descriptor.PlayEffect(effectId, position, rotation, lockstep.SendingPlayerId == localPlayerId);
+        }
+
+        private void SendStopEffectIA(int descriptorIndex, uint effectId)
+        {
+            lockstep.WriteSmall((uint)descriptorIndex);
+            lockstep.WriteSmall(effectId);
+            lockstep.SendInputAction(stopEffectIAId);
+        }
+
+        [SerializeField] [HideInInspector] private uint stopEffectIAId;
+        [LockstepInputAction(nameof(stopEffectIAId))]
+        public void OnStopEffectIA()
+        {
+            if (!initialized)
+                Init();
+            int descriptorIndex = (int)lockstep.ReadSmallUInt();
+            uint effectId = lockstep.ReadSmallUInt();
+            EffectDescriptor descriptor = descriptors[descriptorIndex];
+            int maxCount = descriptor.MaxCount;
+            for (int i = 0; i < maxCount; i++)
+                if (descriptor.ActiveEffectIds[i] == effectId)
+                {
+                    descriptor.StopToggleEffect(i);
+                    break;
+                }
+        }
+
+        private void SendStopAllEffectsIA()
+        {
+            lockstep.SendInputAction(stopAllEffectsIAId);
+        }
+
+        [SerializeField] [HideInInspector] private uint stopAllEffectsIAId;
+        [LockstepInputAction(nameof(stopAllEffectsIAId))]
+        public void OnStopAllEffectsIA()
+        {
+            if (!initialized)
+                Init();
+            // TODO: spread work out across frames (probably)
+            foreach (EffectDescriptor descriptor in descriptors)
+                descriptor.StopAllEffects(onlyLocal: false);
+        }
+
+        public void StopAllLocalEffectsForOneDescriptor(EffectDescriptor descriptor)
+        {
+            if (descriptor.IsOnce || descriptor.ActiveCount == 0)
+                return;
+            for (int i = 0; i < descriptor.MaxCount; i++)
+                if (descriptor.ActiveEffects[i] && descriptor.LastActionWasByLocalPlayer[i])
+                    SendStopEffectIA(descriptor.Index, descriptor.ActiveEffectIds[i]);
+        }
+
+        public void SendStopAllEffectsForOneDescriptorIA(int descriptorIndex)
+        {
+            lockstep.WriteSmall((uint)descriptorIndex);
+            lockstep.SendInputAction(stopAllEffectsForOneDescriptorIAId);
+        }
+
+        [SerializeField] [HideInInspector] private uint stopAllEffectsForOneDescriptorIAId;
+        [LockstepInputAction(nameof(stopAllEffectsForOneDescriptorIAId))]
+        public void OnStopAllEffectsForOneDescriptorIA()
+        {
+            if (!initialized)
+                Init();
+            int descriptorIndex = (int)lockstep.ReadSmallUInt();
+            EffectDescriptor descriptor = descriptors[descriptorIndex];
+            descriptor.StopAllEffects(onlyLocal: false);
+        }
+
+        public override void SerializeGameState(bool isExport)
+        {
+            if (!initialized)
+                Init();
+            lockstep.WriteSmall(nextEffectId);
+            foreach (EffectDescriptor descriptor in descriptors)
+            {
+                if (descriptor.IsOnce)
+                    continue;
+                lockstep.WriteSmall((uint)descriptor.ActiveCount);
+                int maxCount = descriptor.MaxCount;
+                for (int i = 0; i < maxCount; i++)
+                {
+                    if (!descriptor.ActiveEffects[i] || (descriptor.IsLoop && descriptor.FadingOut[i]))
+                        continue;
+                    lockstep.WriteSmall(descriptor.ActiveEffectIds[i]);
+                    Transform effectParent = descriptor.EffectParents[i];
+                    lockstep.Write(effectParent.position);
+                    lockstep.Write(effectParent.rotation);
+                    // NOTE: loop times
+                }
+            }
+        }
+
+        public override string DeserializeGameState(bool isImport)
+        {
+            if (!initialized)
+                Init();
+            nextEffectId = lockstep.ReadSmallUInt();
+            foreach (EffectDescriptor descriptor in descriptors)
+            {
+                if (descriptor.IsOnce)
+                    continue;
+                int activeCount = (int)lockstep.ReadSmallUInt();
+                for (int i = 0; i < activeCount; i++)
+                {
+                    uint effectId = lockstep.ReadSmallUInt();
+                    Vector3 position = lockstep.ReadVector3();
+                    Quaternion rotation = lockstep.ReadQuaternion();
+                    descriptor.PlayEffect(effectId, position, rotation, false);
+                    // NOTE: loop times
+                }
+            }
+            return null;
         }
     }
 }

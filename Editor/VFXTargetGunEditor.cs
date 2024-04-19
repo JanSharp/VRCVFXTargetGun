@@ -23,7 +23,7 @@ namespace JanSharp
                     + $" and drag it to the 'Effects Parent' of the {nameof(VFXTargetGun)}.");
                 return false;
             }
-            if (vfxTargetGun.gunMesh == null || vfxTargetGun.laser == null || vfxTargetGun.orderSync == null)
+            if (vfxTargetGun.gunMesh == null || vfxTargetGun.laser == null)
             {
                 Debug.LogError("VFX Target gun requires all internal references to be set in the inspector.", vfxTargetGun);
                 return false;
