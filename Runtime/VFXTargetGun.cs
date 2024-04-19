@@ -748,7 +748,7 @@ namespace JanSharp
                     Quaternion rotation = placeIndicator.rotation;
                     if (selectedEffect.randomizeRotation)
                         rotation *= selectedEffect.nextRandomRotation;
-                    SendPlayEffectIA(SelectedEffect.Index, placeIndicator.position, rotation);
+                    SendPlayEffectIA(SelectedEffect, placeIndicator.position, rotation);
                     IsPlaceIndicatorActive = false;
                 }
             }
@@ -1116,12 +1116,19 @@ namespace JanSharp
             return redirectedPlayerIds[playerId].UInt;
         }
 
-        private void SendPlayEffectIA(int descriptorIndex, Vector3 position, Quaternion rotation)
+        private void SendPlayEffectIA(EffectDescriptor descriptor, Vector3 position, Quaternion rotation)
         {
-            lockstep.WriteSmall((uint)descriptorIndex);
+            lockstep.WriteSmall((uint)descriptor.Index);
             lockstep.Write(position);
             lockstep.Write(rotation);
             lockstep.SendInputAction(playEffectIAId);
+
+            if (descriptor.IsOnce)
+                descriptor.PlayEffect(
+                    effectId: 0u,
+                    position: position,
+                    rotation: rotation,
+                    isByLocalPlayer: true);
         }
 
         [SerializeField] [HideInInspector] private uint playEffectIAId;
@@ -1130,6 +1137,19 @@ namespace JanSharp
         {
             if (!initialized)
                 Init();
+            EffectDescriptor descriptor = descriptors[lockstep.ReadSmallUInt()];
+            if (descriptor.IsOnce)
+            {
+                if (lockstep.SendingPlayerId == localPlayerId)
+                    return;
+                descriptor.PlayEffect(
+                    effectId: 0u,
+                    position: lockstep.ReadVector3(),
+                    rotation: lockstep.ReadQuaternion(),
+                    isByLocalPlayer: false);
+                return;
+            }
+
             uint effectId = nextEffectId++;
             uint owningPlayerId = GetRedirectedPlayerId(lockstep.SendingPlayerId);
             object[] owningPlayerData = (object[])playerDataById[owningPlayerId].Reference;
@@ -1139,7 +1159,7 @@ namespace JanSharp
                 owningPlayerId: owningPlayerId,
                 owningPlayerData: owningPlayerData,
                 createdTick: lockstep.currentTick,
-                descriptor: descriptors[lockstep.ReadSmallUInt()],
+                descriptor: descriptor,
                 position: lockstep.ReadVector3(),
                 rotation: lockstep.ReadQuaternion());
             effectsById.Add(effectId, new DataToken(effectData));
