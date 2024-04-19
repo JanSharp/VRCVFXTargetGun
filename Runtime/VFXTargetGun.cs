@@ -1,4 +1,4 @@
-using UdonSharp;
+﻿using UdonSharp;
 using UnityEngine;
 using UnityEngine.UI;
 using VRC.SDKBase;
@@ -36,6 +36,8 @@ namespace JanSharp
 
         private object[][] effectsToPlay = new object[ArrList.MinCapacity][];
         private int effectsToPlayCount = 0;
+        private object[][] effectsToStop = new object[ArrList.MinCapacity][];
+        private int effectsToStopCount = 0;
 
         [Header("Configuration")]
         [SerializeField] public Transform effectsParent;
@@ -1070,28 +1072,43 @@ namespace JanSharp
             }
         }
 
-        private bool isWaitingToPlayEffect = false;
-        public void PlayNextEffect()
+        private void StopNextQueuedEffect()
         {
-            isWaitingToPlayEffect = false;
-            if (effectsToPlayCount == 0)
-                return;
+            object[] effectData = effectsToStop[--effectsToStopCount];
+            VFXEffectData.GetDescriptor(effectData).StopToggleEffect(VFXEffectData.GetEffectIndex(effectData));
+        }
+
+        private void PlayNextQueuedEffect()
+        {
             object[] effectData = effectsToPlay[--effectsToPlayCount];
+            if (VFXEffectData.GetEffectId(effectData) == 0u) // Already marked as stopped.
+                return;
             int effectIndex = VFXEffectData.GetDescriptor(effectData).PlayEffect(
                 effectId: VFXEffectData.GetEffectId(effectData),
                 position: VFXEffectData.GetPosition(effectData),
                 rotation: VFXEffectData.GetRotation(effectData),
                 isByLocalPlayer: VFXEffectData.GetOwningPlayerId(effectData) == redirectedLocalPlayerId);
             VFXEffectData.SetEffectIndex(effectData, effectIndex);
-            StartPlayEffectsLoop();
         }
 
-        private void StartPlayEffectsLoop()
+        private bool isWaitingToPlayOrStopEffect = false;
+
+        public void PlayOrStopNextEffect()
         {
-            if (isWaitingToPlayEffect || effectsToPlayCount == 0)
+            isWaitingToPlayOrStopEffect = false;
+            if (effectsToStopCount != 0)
+                StopNextQueuedEffect();
+            else if (effectsToPlayCount != 0)
+                PlayNextQueuedEffect();
+            StartPlayOrStopEffectsLoop();
+        }
+
+        private void StartPlayOrStopEffectsLoop()
+        {
+            if (isWaitingToPlayOrStopEffect || (effectsToStopCount == 0 && effectsToPlayCount == 0))
                 return;
-            isWaitingToPlayEffect = true;
-            SendCustomEventDelayedFrames(nameof(PlayNextEffect), 1);
+            isWaitingToPlayOrStopEffect = true;
+            SendCustomEventDelayedFrames(nameof(PlayOrStopNextEffect), 1);
         }
 
         private uint GetRedirectedPlayerId(uint playerId)
@@ -1127,7 +1144,7 @@ namespace JanSharp
                 rotation: lockstep.ReadQuaternion());
             effectsById.Add(effectId, new DataToken(effectData));
             ArrList.Add(ref effectsToPlay, ref effectsToPlayCount, effectData);
-            StartPlayEffectsLoop();
+            StartPlayOrStopEffectsLoop();
         }
 
         private void SendStopEffectIA(uint effectId)
@@ -1163,15 +1180,17 @@ namespace JanSharp
                 return; // The effect was stopped multiple times, so just ignore it.
             object[] effectData = (object[])effectDataToken.Reference;
             DecrementOwnedEffectCount(VFXEffectData.GetOwningPlayerData(effectData));
-            StopEffectIfItExists(effectData);
+            EnqueueEffectToStop(effectData);
         }
 
-        private void StopEffectIfItExists(object[] effectData)
+        private void EnqueueEffectToStop(object[] effectData)
         {
-            int effectIndex = VFXEffectData.GetEffectIndex(effectData);
-            if (effectIndex == -1)
+            // Ensure that it doesn't get played after it had actually already been stopped.
+            VFXEffectData.SetEffectId(effectData, 0u);
+            if (VFXEffectData.GetEffectIndex(effectData) == -1)
                 return;
-            VFXEffectData.GetDescriptor(effectData).StopToggleEffect(effectIndex);
+            ArrList.Add(ref effectsToStop, ref effectsToStopCount, effectData);
+            StartPlayOrStopEffectsLoop();
         }
 
         private void SendStopAllEffectsIA()
@@ -1185,15 +1204,13 @@ namespace JanSharp
         {
             if (!initialized)
                 Init();
-            // TODO: spread work out across frames (probably)
             DataList effectsList = effectsById.GetValues();
             int count = effectsList.Count;
             for (int i = 0; i < count; i++)
-                StopEffectIfItExists((object[])effectsList[i].Reference);
+                EnqueueEffectToStop((object[])effectsList[i].Reference);
             effectsById.Clear();
 
             DataList playersList = playerDataById.GetValues();
-            // playerDataById.Clear(); // TODO: check if this breaks it, to see if we can modify the dict while iterating the values list.
             count = playersList.Count;
             for (int i = 0; i < count; i++)
             {
@@ -1215,7 +1232,6 @@ namespace JanSharp
         {
             if (!initialized)
                 Init();
-            // TODO: spread work out across frames (probably)
             uint owningPlayerId = lockstep.ReadSmallUInt();
             DataList effectsList = effectsById.GetValues();
             int count = effectsList.Count;
@@ -1225,7 +1241,7 @@ namespace JanSharp
                 if (VFXEffectData.GetOwningPlayerId(effectData) == owningPlayerId)
                 {
                     effectsById.Remove(VFXEffectData.GetEffectId(effectData));
-                    StopEffectIfItExists(effectData);
+                    EnqueueEffectToStop(effectData);
                 }
             }
 
@@ -1249,7 +1265,6 @@ namespace JanSharp
         {
             if (!initialized)
                 Init();
-            // TODO: spread work out across frames (probably)
             int descriptorIndex = (int)lockstep.ReadSmallUInt();
             EffectDescriptor descriptor = descriptors[descriptorIndex];
             DataList effectsList = effectsById.GetValues();
@@ -1260,12 +1275,11 @@ namespace JanSharp
                 if (VFXEffectData.GetDescriptor(effectData) == descriptor)
                 {
                     effectsById.Remove(VFXEffectData.GetEffectId(effectData));
-                    StopEffectIfItExists(effectData);
+                    EnqueueEffectToStop(effectData);
                 }
             }
 
             DataList playersList = playerDataById.GetValues();
-            // playerDataById.Clear(); // TODO: check if this breaks it, to see if we can modify the dict while iterating the values list.
             count = playersList.Count;
             for (int i = 0; i < count; i++)
             {
@@ -1293,7 +1307,6 @@ namespace JanSharp
         {
             if (!initialized)
                 Init();
-            // TODO: spread work out across frames (probably)
             int descriptorIndex = (int)lockstep.ReadSmallUInt();
             uint owningPlayerId = lockstep.ReadSmallUInt();
             EffectDescriptor descriptor = descriptors[descriptorIndex];
@@ -1306,7 +1319,7 @@ namespace JanSharp
                     && VFXEffectData.GetOwningPlayerId(effectData) == owningPlayerId)
                 {
                     effectsById.Remove(VFXEffectData.GetEffectId(effectData));
-                    StopEffectIfItExists(effectData);
+                    EnqueueEffectToStop(effectData);
                 }
             }
 
@@ -1449,7 +1462,7 @@ namespace JanSharp
                 effectsById.Add(effectId, new DataToken(effectData));
                 ArrList.Add(ref effectsToPlay, ref effectsToPlayCount, effectData);
             }
-            StartPlayEffectsLoop();
+            StartPlayOrStopEffectsLoop();
 
             return null;
         }
