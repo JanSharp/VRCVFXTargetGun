@@ -25,7 +25,7 @@ namespace JanSharp
                 descriptor.SelectThisEffect();
         }
 
-        public void OnStopLocalClick() => descriptor.gun.StopAllLocalEffectsForOneDescriptor(descriptor);
+        public void OnStopLocalClick() => descriptor.gun.StopAllEffectsForOneDescriptorOwnedByLocalPlayer(descriptor.Index);
 
         public void OnStopGlobalClick() => descriptor.gun.SendStopAllEffectsForOneDescriptorIA(descriptor.Index);
     }

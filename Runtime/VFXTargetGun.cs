@@ -1,4 +1,4 @@
-﻿using UdonSharp;
+using UdonSharp;
 using UnityEngine;
 using UnityEngine.UI;
 using VRC.SDKBase;
@@ -19,8 +19,23 @@ namespace JanSharp
         [HideInInspector] public Lockstep lockstep;
         private uint lockstepPlayerId;
         private uint localPlayerId;
+        private string localPlayerDisplayName;
+        private uint redirectedLocalPlayerId;
 
+        #region game state
+        ///<summary>uint playerId => object[] VFXPlayerData</summary>
+        private DataDictionary playerDataById = new DataDictionary();
+        ///<summary>string displayName => object[] VFXPlayerData</summary>
+        private DataDictionary playerDataByName = new DataDictionary();
+        ///<summary>uint redirectedPlayerId => uint playerId</summary>
+        private DataDictionary redirectedPlayerIds = new DataDictionary();
+        ///<summary>uint effectId => object[] VFXEffectData</summary>
+        private DataDictionary effectsById = new DataDictionary();
         private uint nextEffectId = 1u;
+        #endregion
+
+        private object[][] effectsToPlay = new object[ArrList.MinCapacity][];
+        private int effectsToPlayCount = 0;
 
         [Header("Configuration")]
         [SerializeField] public Transform effectsParent;
@@ -562,6 +577,8 @@ namespace JanSharp
         private void Start()
         {
             localPlayerId = (uint)Networking.LocalPlayer.playerId;
+            localPlayerDisplayName = Networking.LocalPlayer.displayName;
+            redirectedLocalPlayerId = localPlayerId;
             IsVisible = initialVisibility;
         }
 
@@ -683,9 +700,7 @@ namespace JanSharp
         }
         public void ConfirmDeleteEverythingLocal()
         {
-            // TODO: spread work out across frames (probably)
-            foreach (var descriptor in descriptors)
-                StopAllLocalEffectsForOneDescriptor(descriptor);
+            SendStopAllEffectsOwnedByIA(redirectedLocalPlayerId);
         }
 
         public void DeleteEverythingGlobal()
@@ -741,7 +756,7 @@ namespace JanSharp
             {
                 if (IsDeleteIndicatorActive)
                 {
-                    SendStopEffectIA(DeleteTargetEffectDescriptor.Index, DeleteTargetEffectDescriptor.ActiveEffectIds[DeleteTargetIndex]);
+                    SendStopEffectIA(DeleteTargetEffectDescriptor.ActiveEffectIds[DeleteTargetIndex]);
                     IsDeleteIndicatorActive = false;
                 }
             }
@@ -1057,6 +1072,35 @@ namespace JanSharp
             }
         }
 
+        private bool isWaitingToPlayEffect = false;
+        public void PlayNextEffect()
+        {
+            isWaitingToPlayEffect = false;
+            if (effectsToPlayCount == 0)
+                return;
+            object[] effectData = effectsToPlay[--effectsToPlayCount];
+            int effectIndex = VFXEffectData.GetDescriptor(effectData).PlayEffect(
+                effectId: VFXEffectData.GetEffectId(effectData),
+                position: VFXEffectData.GetPosition(effectData),
+                rotation: VFXEffectData.GetRotation(effectData),
+                isByLocalPlayer: VFXEffectData.GetOwningPlayerId(effectData) == redirectedLocalPlayerId);
+            VFXEffectData.SetEffectIndex(effectData, effectIndex);
+            StartPlayEffectsLoop();
+        }
+
+        private void StartPlayEffectsLoop()
+        {
+            if (isWaitingToPlayEffect || effectsToPlayCount == 0)
+                return;
+            isWaitingToPlayEffect = true;
+            SendCustomEventDelayedFrames(nameof(PlayNextEffect), 1);
+        }
+
+        private uint GetRedirectedPlayerId(uint playerId)
+        {
+            return redirectedPlayerIds[playerId].UInt;
+        }
+
         private void SendPlayEffectIA(int descriptorIndex, Vector3 position, Quaternion rotation)
         {
             lockstep.WriteSmall((uint)descriptorIndex);
@@ -1071,20 +1115,43 @@ namespace JanSharp
         {
             if (!initialized)
                 Init();
-            int descriptorIndex = (int)lockstep.ReadSmallUInt();
-            Vector3 position = lockstep.ReadVector3();
-            Quaternion rotation = lockstep.ReadQuaternion();
             uint effectId = nextEffectId++;
-            // NOTE: time of loop effects
-            EffectDescriptor descriptor = descriptors[descriptorIndex];
-            descriptor.PlayEffect(effectId, position, rotation, lockstep.SendingPlayerId == localPlayerId);
+            uint owningPlayerId = GetRedirectedPlayerId(lockstep.SendingPlayerId);
+            object[] owningPlayerData = (object[])playerDataById[owningPlayerId].Reference;
+            VFXPlayerData.SetOwnedEffectCount(owningPlayerData, VFXPlayerData.GetOwnedEffectCount(owningPlayerData) + 1u);
+            object[] effectData = VFXEffectData.New(
+                effectId: effectId,
+                owningPlayerId: owningPlayerId,
+                owningPlayerData: owningPlayerData,
+                createdTick: lockstep.currentTick,
+                descriptor: descriptors[lockstep.ReadSmallUInt()],
+                position: lockstep.ReadVector3(),
+                rotation: lockstep.ReadQuaternion());
+            effectsById.Add(effectId, new DataToken(effectData));
+            ArrList.Add(ref effectsToPlay, ref effectsToPlayCount, effectData);
+            StartPlayEffectsLoop();
         }
 
-        private void SendStopEffectIA(int descriptorIndex, uint effectId)
+        private void SendStopEffectIA(uint effectId)
         {
-            lockstep.WriteSmall((uint)descriptorIndex);
             lockstep.WriteSmall(effectId);
             lockstep.SendInputAction(stopEffectIAId);
+        }
+
+        private void DecrementOwnedEffectCount(object[] playerData)
+        {
+            uint ownedEffectCount = VFXPlayerData.GetOwnedEffectCount(playerData) - 1u;
+            VFXPlayerData.SetOwnedEffectCount(playerData, ownedEffectCount);
+            if (ownedEffectCount == 0)
+                RemovePlayerDataWithoutClones(playerData);
+        }
+
+        private void RemovePlayerDataWithoutClones(object[] playerData)
+        {
+            if (VFXPlayerData.GetCloneCount(playerData) != 0u)
+                return;
+            playerDataById.Remove(VFXPlayerData.GetPlayerId(playerData));
+            playerDataByName.Remove(VFXPlayerData.GetDisplayName(playerData));
         }
 
         [SerializeField] [HideInInspector] private uint stopEffectIAId;
@@ -1093,16 +1160,20 @@ namespace JanSharp
         {
             if (!initialized)
                 Init();
-            int descriptorIndex = (int)lockstep.ReadSmallUInt();
             uint effectId = lockstep.ReadSmallUInt();
-            EffectDescriptor descriptor = descriptors[descriptorIndex];
-            int maxCount = descriptor.MaxCount;
-            for (int i = 0; i < maxCount; i++)
-                if (descriptor.ActiveEffectIds[i] == effectId)
-                {
-                    descriptor.StopToggleEffect(i);
-                    break;
-                }
+            if (!effectsById.Remove(effectId, out DataToken effectDataToken))
+                return; // The effect was stopped multiple times, so just ignore it.
+            object[] effectData = (object[])effectDataToken.Reference;
+            DecrementOwnedEffectCount(VFXEffectData.GetOwningPlayerData(effectData));
+            StopEffectIfItExists(effectData);
+        }
+
+        private void StopEffectIfItExists(object[] effectData)
+        {
+            int effectIndex = VFXEffectData.GetEffectIndex(effectData);
+            if (effectIndex == -1)
+                return;
+            VFXEffectData.GetDescriptor(effectData).StopToggleEffect(effectIndex);
         }
 
         private void SendStopAllEffectsIA()
@@ -1117,17 +1188,55 @@ namespace JanSharp
             if (!initialized)
                 Init();
             // TODO: spread work out across frames (probably)
-            foreach (EffectDescriptor descriptor in descriptors)
-                descriptor.StopAllEffects(onlyLocal: false);
+            DataList effectsList = effectsById.GetValues();
+            int count = effectsList.Count;
+            for (int i = 0; i < count; i++)
+                StopEffectIfItExists((object[])effectsList[i].Reference);
+            effectsById.Clear();
+
+            DataList playersList = playerDataById.GetValues();
+            // playerDataById.Clear(); // TODO: check if this breaks it, to see if we can modify the dict while iterating the values list.
+            count = playersList.Count;
+            for (int i = 0; i < count; i++)
+            {
+                object[] playerData = (object[])playersList[i].Reference;
+                VFXPlayerData.SetOwnedEffectCount(playerData, 0u);
+                RemovePlayerDataWithoutClones(playerData);
+            }
         }
 
-        public void StopAllLocalEffectsForOneDescriptor(EffectDescriptor descriptor)
+        private void SendStopAllEffectsOwnedByIA(uint owningPlayerId)
         {
-            if (descriptor.IsOnce || descriptor.ActiveCount == 0)
+            lockstep.WriteSmall(owningPlayerId);
+            lockstep.SendInputAction(stopAllEffectsOwnedByIAId);
+        }
+
+        [SerializeField] [HideInInspector] private uint stopAllEffectsOwnedByIAId;
+        [LockstepInputAction(nameof(stopAllEffectsOwnedByIAId))]
+        public void OnStopAllEffectsOwnedByIA()
+        {
+            if (!initialized)
+                Init();
+            // TODO: spread work out across frames (probably)
+            uint owningPlayerId = lockstep.ReadSmallUInt();
+            DataList effectsList = effectsById.GetValues();
+            int count = effectsList.Count;
+            for (int i = 0; i < count; i++)
+            {
+                object[] effectData = (object[])effectsList[i].Reference;
+                if (VFXEffectData.GetOwningPlayerId(effectData) == owningPlayerId)
+                {
+                    effectsById.Remove(VFXEffectData.GetEffectId(effectData));
+                    StopEffectIfItExists(effectData);
+                }
+            }
+
+            // Could be removed already if OnStopAllEffectsOwnedByIA got sent twice.
+            if (!playerDataById.TryGetValue(owningPlayerId, out DataToken playerDataToken))
                 return;
-            for (int i = 0; i < descriptor.MaxCount; i++)
-                if (descriptor.ActiveEffects[i] && descriptor.LastActionWasByLocalPlayer[i])
-                    SendStopEffectIA(descriptor.Index, descriptor.ActiveEffectIds[i]);
+            object[] playerData = (object[])playerDataToken.Reference;
+            VFXPlayerData.SetOwnedEffectCount(playerData, 0u);
+            RemovePlayerDataWithoutClones(playerData);
         }
 
         public void SendStopAllEffectsForOneDescriptorIA(int descriptorIndex)
@@ -1142,32 +1251,155 @@ namespace JanSharp
         {
             if (!initialized)
                 Init();
+            // TODO: spread work out across frames (probably)
             int descriptorIndex = (int)lockstep.ReadSmallUInt();
             EffectDescriptor descriptor = descriptors[descriptorIndex];
-            descriptor.StopAllEffects(onlyLocal: false);
+            DataList effectsList = effectsById.GetValues();
+            int count = effectsList.Count;
+            for (int i = 0; i < count; i++)
+            {
+                object[] effectData = (object[])effectsList[i].Reference;
+                if (VFXEffectData.GetDescriptor(effectData) == descriptor)
+                {
+                    effectsById.Remove(VFXEffectData.GetEffectId(effectData));
+                    StopEffectIfItExists(effectData);
+                }
+            }
+
+            DataList playersList = playerDataById.GetValues();
+            // playerDataById.Clear(); // TODO: check if this breaks it, to see if we can modify the dict while iterating the values list.
+            count = playersList.Count;
+            for (int i = 0; i < count; i++)
+            {
+                object[] playerData = (object[])playersList[i].Reference;
+                VFXPlayerData.SetOwnedEffectCount(playerData, 0u);
+                RemovePlayerDataWithoutClones(playerData);
+            }
+        }
+
+        public void StopAllEffectsForOneDescriptorOwnedByLocalPlayer(int descriptorIndex)
+        {
+            SendStopAllEffectsForOneDescriptorOwnedByIA(descriptorIndex, redirectedLocalPlayerId);
+        }
+
+        private void SendStopAllEffectsForOneDescriptorOwnedByIA(int descriptorIndex, uint owningPlayerId)
+        {
+            lockstep.WriteSmall((uint)descriptorIndex);
+            lockstep.WriteSmall(owningPlayerId);
+            lockstep.SendInputAction(stopAllEffectsForOneDescriptorOwnedByIAId);
+        }
+
+        [SerializeField] [HideInInspector] private uint stopAllEffectsForOneDescriptorOwnedByIAId;
+        [LockstepInputAction(nameof(stopAllEffectsForOneDescriptorOwnedByIAId))]
+        public void OnStopAllEffectsForOneDescriptorOwnedByIA()
+        {
+            if (!initialized)
+                Init();
+            // TODO: spread work out across frames (probably)
+            int descriptorIndex = (int)lockstep.ReadSmallUInt();
+            uint owningPlayerId = lockstep.ReadSmallUInt();
+            EffectDescriptor descriptor = descriptors[descriptorIndex];
+            DataList effectsList = effectsById.GetValues();
+            int count = effectsList.Count;
+            for (int i = 0; i < count; i++)
+            {
+                object[] effectData = (object[])effectsList[i].Reference;
+                if (VFXEffectData.GetDescriptor(effectData) == descriptor
+                    && VFXEffectData.GetOwningPlayerId(effectData) == owningPlayerId)
+                {
+                    effectsById.Remove(VFXEffectData.GetEffectId(effectData));
+                    StopEffectIfItExists(effectData);
+                }
+            }
+
+            // Could be removed already if OnStopAllEffectsForOneDescriptorOwnedByIA got sent twice.
+            if (!playerDataById.TryGetValue(owningPlayerId, out DataToken playerDataToken))
+                return;
+            object[] playerData = (object[])playerDataToken.Reference;
+            VFXPlayerData.SetOwnedEffectCount(playerData, 0u);
+            RemovePlayerDataWithoutClones(playerData);
+        }
+
+        [LockstepEvent(LockstepEventType.OnClientJoined)]
+        public void OnClientJoined()
+        {
+            string displayName = lockstep.GetDisplayName(lockstepPlayerId);
+            object[] playerData;
+            DataToken playerDataToken;
+            if (playerDataByName.TryGetValue(displayName, out playerDataToken))
+            {
+                playerData = (object[])playerDataToken.Reference;
+                VFXPlayerData.SetCloneCount(playerData, VFXPlayerData.GetCloneCount(playerData) + 1u);
+                redirectedPlayerIds.Add(lockstepPlayerId, VFXPlayerData.GetPlayerId(playerData));
+                if (lockstepPlayerId == localPlayerId)
+                    redirectedLocalPlayerId = VFXPlayerData.GetPlayerId(playerData);
+                return;
+            }
+            playerData = VFXPlayerData.New(
+                playerId: lockstepPlayerId,
+                displayName: displayName,
+                ownedEffectCount: 0u,
+                cloneCount: 1u);
+            playerDataToken = new DataToken(playerData);
+            redirectedPlayerIds.Add(lockstepPlayerId, lockstepPlayerId);
+            playerDataByName.Add(displayName, playerDataToken);
+            playerDataById.Add(lockstepPlayerId, playerDataToken);
+        }
+
+        [LockstepEvent(LockstepEventType.OnClientLeft)]
+        public void OnClientLeft()
+        {
+            redirectedPlayerIds.Remove(lockstepPlayerId, out DataToken redirectedPlayerIdToken);
+            uint redirectedPlayerId = redirectedPlayerIdToken.UInt;
+            object[] playerData = (object[])playerDataById[redirectedPlayerId].Reference;
+            uint remainingCloneCount = VFXPlayerData.GetCloneCount(playerData) - 1u;
+            VFXPlayerData.SetCloneCount(playerData, remainingCloneCount);
+            if (remainingCloneCount != 0u || VFXPlayerData.GetOwnedEffectCount(playerData) != 0u)
+                return;
+            playerDataById.Remove(redirectedPlayerId);
+            playerDataByName.Remove(VFXPlayerData.GetDisplayName(playerData));
         }
 
         public override void SerializeGameState(bool isExport)
         {
             if (!initialized)
                 Init();
-            lockstep.WriteSmall(nextEffectId);
-            foreach (EffectDescriptor descriptor in descriptors)
+
+            int playerDataCount = playerDataById.Count;
+            lockstep.WriteSmall((uint)playerDataCount);
+            DataList playerDataList = playerDataById.GetValues();
+            for (int i = 0; i < playerDataCount; i++)
             {
-                if (descriptor.IsOnce)
-                    continue;
-                lockstep.WriteSmall((uint)descriptor.ActiveCount);
-                int maxCount = descriptor.MaxCount;
-                for (int i = 0; i < maxCount; i++)
-                {
-                    if (!descriptor.ActiveEffects[i] || (descriptor.IsLoop && descriptor.FadingOut[i]))
-                        continue;
-                    lockstep.WriteSmall(descriptor.ActiveEffectIds[i]);
-                    Transform effectParent = descriptor.EffectParents[i];
-                    lockstep.Write(effectParent.position);
-                    lockstep.Write(effectParent.rotation);
-                    // NOTE: loop times
-                }
+                object[] playerData = (object[])playerDataList[i].Reference;
+                lockstep.WriteSmall(VFXPlayerData.GetPlayerId(playerData));
+                lockstep.Write(VFXPlayerData.GetDisplayName(playerData));
+                lockstep.WriteSmall(VFXPlayerData.GetOwnedEffectCount(playerData));
+                lockstep.WriteSmall(VFXPlayerData.GetCloneCount(playerData));
+            }
+
+            int redirectedCount = redirectedPlayerIds.Count;
+            lockstep.WriteSmall((uint)redirectedCount);
+            DataList redirectedKeys = redirectedPlayerIds.GetKeys();
+            DataList redirectedValues = redirectedPlayerIds.GetValues();
+            for (int i = 0; i < redirectedCount; i++)
+            {
+                lockstep.WriteSmall(redirectedKeys[i].UInt);
+                lockstep.WriteSmall(redirectedValues[i].UInt);
+            }
+
+            lockstep.WriteSmall(nextEffectId);
+            int effectCount = effectsById.Count;
+            lockstep.WriteSmall((uint)effectCount);
+            DataList effectsList = effectsById.GetValues();
+            for (int i = 0; i < effectCount; i++)
+            {
+                object[] effectData = (object[])effectsList[i].Reference;
+                lockstep.WriteSmall(VFXEffectData.GetEffectId(effectData));
+                lockstep.WriteSmall(VFXEffectData.GetOwningPlayerId(effectData));
+                lockstep.WriteSmall(VFXEffectData.GetCreatedTick(effectData));
+                lockstep.WriteSmall((uint)VFXEffectData.GetDescriptor(effectData).Index);
+                lockstep.Write(VFXEffectData.GetPosition(effectData));
+                lockstep.Write(VFXEffectData.GetRotation(effectData));
             }
         }
 
@@ -1175,21 +1407,52 @@ namespace JanSharp
         {
             if (!initialized)
                 Init();
-            nextEffectId = lockstep.ReadSmallUInt();
-            foreach (EffectDescriptor descriptor in descriptors)
+
+            int playerDataCount = (int)lockstep.ReadSmallUInt();
+            for (int i = 0; i < playerDataCount; i++)
             {
-                if (descriptor.IsOnce)
-                    continue;
-                int activeCount = (int)lockstep.ReadSmallUInt();
-                for (int i = 0; i < activeCount; i++)
-                {
-                    uint effectId = lockstep.ReadSmallUInt();
-                    Vector3 position = lockstep.ReadVector3();
-                    Quaternion rotation = lockstep.ReadQuaternion();
-                    descriptor.PlayEffect(effectId, position, rotation, false);
-                    // NOTE: loop times
-                }
+                uint playerId = lockstep.ReadSmallUInt();
+                string displayName = lockstep.ReadString();
+                object[] playerData = VFXPlayerData.New(
+                    playerId: playerId,
+                    displayName: displayName,
+                    ownedEffectCount: lockstep.ReadSmallUInt(),
+                    cloneCount: lockstep.ReadSmallUInt());
+                DataToken playerDataToken = new DataToken(playerData);
+                playerDataById.Add(playerId, playerDataToken);
+                playerDataByName.Add(displayName, playerDataToken);
+
+                if (displayName == localPlayerDisplayName)
+                    redirectedLocalPlayerId = playerId;
             }
+
+            int redirectedCount = (int)lockstep.ReadSmallUInt();
+            for (int i = 0; i < redirectedCount; i++)
+            {
+                uint redirectedPlayerId = lockstep.ReadSmallUInt();
+                uint playerId = lockstep.ReadSmallUInt();
+                redirectedPlayerIds.Add(redirectedPlayerId, playerId);
+            }
+
+            nextEffectId = lockstep.ReadSmallUInt();
+            int effectCount = (int)lockstep.ReadSmallUInt();
+            for (int i = 0; i < effectCount; i++)
+            {
+                uint effectId = lockstep.ReadSmallUInt();
+                uint owningPlayerId = lockstep.ReadSmallUInt();
+                object[] effectData = VFXEffectData.New(
+                    effectId: effectId,
+                    owningPlayerId: owningPlayerId,
+                    owningPlayerData: (object[])playerDataById[owningPlayerId].Reference,
+                    createdTick: lockstep.ReadSmallUInt(),
+                    descriptor: descriptors[lockstep.ReadSmallUInt()],
+                    position: lockstep.ReadVector3(),
+                    rotation: lockstep.ReadQuaternion());
+                effectsById.Add(effectId, new DataToken(effectData));
+                ArrList.Add(ref effectsToPlay, ref effectsToPlayCount, effectData);
+            }
+            StartPlayEffectsLoop();
+
             return null;
         }
     }

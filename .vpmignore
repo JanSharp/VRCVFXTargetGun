@@ -4,3 +4,5 @@ Runtime/Models/VFXTargetGun.blend*
 
 Runtime/Dev/**/*
 Runtime/Dev.meta
+**/*.lua
+**/*.lua.meta

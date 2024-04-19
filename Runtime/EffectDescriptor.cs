@@ -414,22 +414,6 @@ namespace JanSharp
             return index;
         }
 
-        public void StopAllEffects(bool onlyLocal)
-        {
-            if (ActiveCount == 0)
-                return;
-            for (int i = 0; i < MaxCount; i++)
-                if (ActiveEffects[i] && (!onlyLocal || LastActionWasByLocalPlayer[i]))
-                {
-                    if (IsToggle)
-                        StopToggleEffect(i);
-                    else
-                    {
-                        // TODO: stop once effect
-                    }
-                }
-        }
-
         public void StopToggleEffect(int index)
         {
             SetLastActionWasByLocalPlayer(index, false);
