@@ -39,6 +39,10 @@ namespace JanSharp
         private object[][] effectsToStop = new object[ArrList.MinCapacity][];
         private int effectsToStopCount = 0;
 
+        ///<summary><para>ulong uniqueId => object[] VFXEffectData</para>
+        ///<para>Very explicitly used as a latency state for latency hiding.</para></summary>
+        private DataDictionary effectsByUniqueId = new DataDictionary();
+
         [Header("Configuration")]
         [SerializeField] public Transform effectsParent;
         [SerializeField] private float maxDistance = 250f;
@@ -756,7 +760,11 @@ namespace JanSharp
             {
                 if (IsDeleteIndicatorActive)
                 {
-                    SendStopEffectIA(DeleteTargetEffectDescriptor.ActiveEffectIds[DeleteTargetIndex]);
+                    ulong uniqueId = DeleteTargetEffectDescriptor.ActiveUniqueIds[DeleteTargetIndex];
+                    if (uniqueId == 0uL)
+                        SendStopEffectIA(DeleteTargetEffectDescriptor.ActiveEffectIds[DeleteTargetIndex]);
+                    else // Only exists in latency state.
+                        StopEffectInLatencyState(uniqueId);
                     IsDeleteIndicatorActive = false;
                 }
             }
@@ -1121,14 +1129,38 @@ namespace JanSharp
             lockstep.WriteSmall((uint)descriptor.Index);
             lockstep.Write(position);
             lockstep.Write(rotation);
-            lockstep.SendInputAction(playEffectIAId);
+            ulong uniqueId = lockstep.SendInputAction(playEffectIAId);
+            if (uniqueId == 0uL)
+                return;
 
             if (descriptor.IsOnce)
+            {
                 descriptor.PlayEffect(
                     effectId: 0u,
                     position: position,
                     rotation: rotation,
                     isByLocalPlayer: true);
+                return;
+            }
+
+            // Latency hiding.
+            object[] effectData = VFXEffectData.New(
+                effectId: 0u, // Unknown.
+                owningPlayerId: redirectedLocalPlayerId,
+                owningPlayerData: (object[])playerDataById[redirectedLocalPlayerId].Reference,
+                createdTick: 0u, // Unknown.
+                descriptor: descriptor,
+                position: position,
+                rotation: rotation,
+                uniqueId: uniqueId,
+                effectIndex: descriptor.PlayEffect(
+                    effectId: 0u, // Unknown.
+                    position: position,
+                    rotation: rotation,
+                    isByLocalPlayer: true,
+                    uniqueId: uniqueId)
+            );
+            effectsByUniqueId.Add(uniqueId, new DataToken(effectData));
         }
 
         [SerializeField] [HideInInspector] private uint playEffectIAId;
@@ -1151,10 +1183,31 @@ namespace JanSharp
             }
 
             uint effectId = nextEffectId++;
+            object[] effectData;
+
+            // Handle latency state.
+            if (effectsByUniqueId.Remove(lockstep.SendingUniqueId, out DataToken effectDataToken))
+            {
+                effectData = (object[])effectDataToken.Reference;
+                VFXEffectData.SetEffectId(effectData, effectId);
+                VFXEffectData.SetCreatedTick(effectData, lockstep.currentTick);
+                VFXEffectData.SetUniqueId(effectData, 0uL);
+                effectsById.Add(effectId, effectDataToken);
+                int effectIndex = VFXEffectData.GetEffectIndex(effectData);
+                if (effectIndex == -1) // Was already stopped in latency state.
+                {
+                    SendStopEffectIA(effectId);
+                    return;
+                }
+                descriptor.ActiveEffectIds[effectIndex] = effectId;
+                descriptor.ActiveUniqueIds[effectIndex] = 0uL;
+                return;
+            }
+
             uint owningPlayerId = GetRedirectedPlayerId(lockstep.SendingPlayerId);
             object[] owningPlayerData = (object[])playerDataById[owningPlayerId].Reference;
             VFXPlayerData.SetOwnedEffectCount(owningPlayerData, VFXPlayerData.GetOwnedEffectCount(owningPlayerData) + 1u);
-            object[] effectData = VFXEffectData.New(
+            effectData = VFXEffectData.New(
                 effectId: effectId,
                 owningPlayerId: owningPlayerId,
                 owningPlayerData: owningPlayerData,
@@ -1170,7 +1223,17 @@ namespace JanSharp
         private void SendStopEffectIA(uint effectId)
         {
             lockstep.WriteSmall(effectId);
-            lockstep.SendInputAction(stopEffectIAId);
+            ulong uniqueId = lockstep.SendInputAction(stopEffectIAId);
+            if (uniqueId == 0uL)
+                return;
+
+            // Latency hiding.
+            object[] effectData = (object[])effectsById[effectId].Reference;
+            int effectIndex = VFXEffectData.GetEffectIndex(effectData);
+            if (effectIndex == -1)
+                return;
+            VFXEffectData.GetDescriptor(effectData).StopToggleEffect(effectIndex);
+            VFXEffectData.SetEffectIndex(effectData, -1);
         }
 
         private void DecrementOwnedEffectCount(object[] playerData)
@@ -1203,6 +1266,21 @@ namespace JanSharp
             EnqueueEffectToStop(effectData);
         }
 
+        private void StopEffectInLatencyState(ulong uniqueId)
+        {
+            StopEffectInLatencyState((object[])effectsByUniqueId[uniqueId].Reference);
+        }
+
+        private void StopEffectInLatencyState(object[] effectData)
+        {
+            int effectIndex = VFXEffectData.GetEffectIndex(effectData);
+            if (effectIndex == -1) // It could be stopped multiple times even in latency state.
+                return;
+            VFXEffectData.GetDescriptor(effectData).StopToggleEffect(effectIndex);
+            // Mark it as already stopped. The PlayEffectIA is going to handle cleaning up of this data.
+            VFXEffectData.SetEffectIndex(effectData, -1);
+        }
+
         private void EnqueueEffectToStop(object[] effectData)
         {
             // Ensure that it doesn't get played after it had actually already been stopped.
@@ -1213,9 +1291,20 @@ namespace JanSharp
             StartPlayOrStopEffectsLoop();
         }
 
+        private void StopAllEffectsInLatencyState()
+        {
+            DataList effectsList = effectsByUniqueId.GetValues();
+            int count = effectsList.Count;
+            for (int i = 0; i < count; i++)
+                StopEffectInLatencyState((object[])effectsList[i].Reference);
+        }
+
         private void SendStopAllEffectsIA()
         {
             lockstep.SendInputAction(stopAllEffectsIAId);
+
+            // Handle latency state.
+            StopAllEffectsInLatencyState();
         }
 
         [SerializeField] [HideInInspector] private uint stopAllEffectsIAId;
@@ -1244,6 +1333,11 @@ namespace JanSharp
         {
             lockstep.WriteSmall(owningPlayerId);
             lockstep.SendInputAction(stopAllEffectsOwnedByIAId);
+
+            // Handle latency state.
+            if (owningPlayerId != redirectedLocalPlayerId)
+                return;
+            StopAllEffectsInLatencyState();
         }
 
         [SerializeField] [HideInInspector] private uint stopAllEffectsOwnedByIAId;
@@ -1273,10 +1367,25 @@ namespace JanSharp
             RemovePlayerDataWithoutClones(playerData);
         }
 
-        public void SendStopAllEffectsForOneDescriptorIA(int descriptorIndex)
+        private void  StopAllEffectsForOneDescriptorInLatencyState(EffectDescriptor descriptor)
         {
-            lockstep.WriteSmall((uint)descriptorIndex);
+            DataList effectsList = effectsByUniqueId.GetValues();
+            int count = effectsList.Count;
+            for (int i = 0; i < count; i++)
+            {
+                object[] effectData = (object[])effectsList[i].Reference;
+                if (VFXEffectData.GetDescriptor(effectData) == descriptor)
+                    StopEffectInLatencyState(effectData);
+            }
+        }
+
+        public void SendStopAllEffectsForOneDescriptorIA(EffectDescriptor descriptor)
+        {
+            lockstep.WriteSmall((uint)descriptor.Index);
             lockstep.SendInputAction(stopAllEffectsForOneDescriptorIAId);
+
+            // Handle latency state.
+            StopAllEffectsForOneDescriptorInLatencyState(descriptor);
         }
 
         [SerializeField] [HideInInspector] private uint stopAllEffectsForOneDescriptorIAId;
@@ -1309,16 +1418,21 @@ namespace JanSharp
             }
         }
 
-        public void StopAllEffectsForOneDescriptorOwnedByLocalPlayer(int descriptorIndex)
+        public void StopAllEffectsForOneDescriptorOwnedByLocalPlayer(EffectDescriptor descriptor)
         {
-            SendStopAllEffectsForOneDescriptorOwnedByIA(descriptorIndex, redirectedLocalPlayerId);
+            SendStopAllEffectsForOneDescriptorOwnedByIA(descriptor, redirectedLocalPlayerId);
         }
 
-        private void SendStopAllEffectsForOneDescriptorOwnedByIA(int descriptorIndex, uint owningPlayerId)
+        private void SendStopAllEffectsForOneDescriptorOwnedByIA(EffectDescriptor descriptor, uint owningPlayerId)
         {
-            lockstep.WriteSmall((uint)descriptorIndex);
+            lockstep.WriteSmall((uint)descriptor.Index);
             lockstep.WriteSmall(owningPlayerId);
             lockstep.SendInputAction(stopAllEffectsForOneDescriptorOwnedByIAId);
+
+            // Handle latency state.
+            if (owningPlayerId != redirectedLocalPlayerId)
+                return;
+            StopAllEffectsForOneDescriptorInLatencyState(descriptor);
         }
 
         [SerializeField] [HideInInspector] private uint stopAllEffectsForOneDescriptorOwnedByIAId;

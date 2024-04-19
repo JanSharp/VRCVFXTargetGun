@@ -18,6 +18,7 @@ return {
     {type = "EffectDescriptor", name = "descriptor"},
     {type = "Vector3", name = "position"},
     {type = "Quaternion", name = "rotation"},
+    {type = "ulong", name = "uniqueId"}, -- Not part of the game state.
     {type = "int", name = "effectIndex", default = "-1"}, -- Not part of the game state.
   },
 }

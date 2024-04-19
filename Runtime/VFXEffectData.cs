@@ -24,9 +24,11 @@ namespace JanSharp
         public const int Position = 5;
         ///<summary>Quaternion</summary>
         public const int Rotation = 6;
+        ///<summary>ulong</summary>
+        public const int UniqueId = 7;
         ///<summary>int</summary>
-        public const int EffectIndex = 7;
-        public const int ObjectSize = 8;
+        public const int EffectIndex = 8;
+        public const int ObjectSize = 9;
 
         public static object[] New(
             uint effectId = default,
@@ -36,6 +38,7 @@ namespace JanSharp
             EffectDescriptor descriptor = default,
             Vector3 position = default,
             Quaternion rotation = default,
+            ulong uniqueId = default,
             int effectIndex = -1)
         {
             object[] vFXEffectData = new object[ObjectSize];
@@ -46,6 +49,7 @@ namespace JanSharp
             vFXEffectData[Descriptor] = descriptor;
             vFXEffectData[Position] = position;
             vFXEffectData[Rotation] = rotation;
+            vFXEffectData[UniqueId] = uniqueId;
             vFXEffectData[EffectIndex] = effectIndex;
             return vFXEffectData;
         }
@@ -78,6 +82,10 @@ namespace JanSharp
             => (Quaternion)vFXEffectData[Rotation];
         public static void SetRotation(object[] vFXEffectData, Quaternion rotation)
             => vFXEffectData[Rotation] = rotation;
+        public static ulong GetUniqueId(object[] vFXEffectData)
+            => (ulong)vFXEffectData[UniqueId];
+        public static void SetUniqueId(object[] vFXEffectData, ulong uniqueId)
+            => vFXEffectData[UniqueId] = uniqueId;
         public static int GetEffectIndex(object[] vFXEffectData)
             => (int)vFXEffectData[EffectIndex];
         public static void SetEffectIndex(object[] vFXEffectData, int effectIndex)

@@ -118,6 +118,7 @@ namespace JanSharp
         public ParticleSystem[][] ParticleSystems { get; private set; }
         public bool[] ActiveEffects { get; private set; } // NOTE: whenever setting an effect to inactive also SetLastActionWasByLocalPlayer to false
         public uint[] ActiveEffectIds { get; private set; }
+        public ulong[] ActiveUniqueIds { get; private set; }
         public bool[] LastActionWasByLocalPlayer { get; private set; }
         private void SetLastActionWasByLocalPlayer(int index, bool value)
         {
@@ -268,6 +269,7 @@ namespace JanSharp
                 ParticleSystems = new ParticleSystem[4][];
             ActiveEffects = new bool[4];
             ActiveEffectIds = new uint[4];
+            ActiveUniqueIds = new ulong[4];
             LastActionWasByLocalPlayer = new bool[4];
             if (IsLoop)
                 FadingOut = new bool[4];
@@ -317,6 +319,9 @@ namespace JanSharp
             var newActiveEffectIds = new uint[newLength];
             ActiveEffectIds.CopyTo(newActiveEffectIds, 0);
             ActiveEffectIds = newActiveEffectIds;
+            var newActiveUniqueIds = new ulong[newLength];
+            ActiveUniqueIds.CopyTo(newActiveUniqueIds, 0);
+            ActiveUniqueIds = newActiveUniqueIds;
             var newPlacedByLocalPlayer = new bool[newLength];
             LastActionWasByLocalPlayer.CopyTo(newPlacedByLocalPlayer, 0);
             LastActionWasByLocalPlayer = newPlacedByLocalPlayer;
@@ -388,7 +393,7 @@ namespace JanSharp
             return result;
         }
 
-        public int PlayEffect(uint effectId, Vector3 position, Quaternion rotation, bool isByLocalPlayer)
+        public int PlayEffect(uint effectId, Vector3 position, Quaternion rotation, bool isByLocalPlayer, ulong uniqueId = 0uL)
         {
             if (randomizeRotation && isByLocalPlayer)
                 nextRandomRotation = Quaternion.AngleAxis(Random.Range(0f, 360f), Vector3.forward);
@@ -408,7 +413,7 @@ namespace JanSharp
                         break;
                     }
             }
-            PlayEffectInternal(effectId, index, position, rotation);
+            PlayEffectInternal(effectId, index, position, rotation, uniqueId);
             if (isByLocalPlayer)
                 SetLastActionWasByLocalPlayer(index, true);
             return index;
@@ -437,10 +442,11 @@ namespace JanSharp
                 EffectParents[index].gameObject.SetActive(false);
         }
 
-        private void PlayEffectInternal(uint effectId, int index, Vector3 position, Quaternion rotation)
+        private void PlayEffectInternal(uint effectId, int index, Vector3 position, Quaternion rotation, ulong uniqueId)
         {
             var effectTransform = GetEffectAtIndex(index);
             ActiveEffectIds[index] = effectId;
+            ActiveUniqueIds[index] = uniqueId;
             if (ActiveEffects[index])
                 return;
             ActiveCount++;
