@@ -16,7 +16,7 @@ namespace JanSharp
         public override bool GameStateSupportsImportExport => false;
         public override uint GameStateDataVersion => 0u;
         public override uint GameStateLowestSupportedDataVersion => 0u;
-        [HideInInspector] public Lockstep lockstep;
+        [HideInInspector] public LockstepAPI lockstep;
         private uint lockstepPlayerId;
         private uint localPlayerId;
         private string localPlayerDisplayName;
@@ -1190,7 +1190,7 @@ namespace JanSharp
             {
                 effectData = (object[])effectDataToken.Reference;
                 VFXEffectData.SetEffectId(effectData, effectId);
-                VFXEffectData.SetCreatedTick(effectData, lockstep.currentTick);
+                VFXEffectData.SetCreatedTick(effectData, lockstep.CurrentTick);
                 VFXEffectData.SetUniqueId(effectData, 0uL);
                 effectsById.Add(effectId, effectDataToken);
                 int effectIndex = VFXEffectData.GetEffectIndex(effectData);
@@ -1211,7 +1211,7 @@ namespace JanSharp
                 effectId: effectId,
                 owningPlayerId: owningPlayerId,
                 owningPlayerData: owningPlayerData,
-                createdTick: lockstep.currentTick,
+                createdTick: lockstep.CurrentTick,
                 descriptor: descriptor,
                 position: lockstep.ReadVector3(),
                 rotation: lockstep.ReadQuaternion());
