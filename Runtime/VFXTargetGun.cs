@@ -17,7 +17,6 @@ namespace JanSharp
         public override uint GameStateDataVersion => 0u;
         public override uint GameStateLowestSupportedDataVersion => 0u;
         [HideInInspector] public LockstepAPI lockstep;
-        private uint lockstepPlayerId;
         private uint localPlayerId;
         private string localPlayerDisplayName;
         private uint redirectedLocalPlayerId;
@@ -1468,33 +1467,34 @@ namespace JanSharp
         [LockstepEvent(LockstepEventType.OnClientJoined)]
         public void OnClientJoined()
         {
-            string displayName = lockstep.GetDisplayName(lockstepPlayerId);
+            uint joinedPlayerId = lockstep.JoinedPlayerId;
+            string displayName = lockstep.GetDisplayName(joinedPlayerId);
             object[] playerData;
             DataToken playerDataToken;
             if (playerDataByName.TryGetValue(displayName, out playerDataToken))
             {
                 playerData = (object[])playerDataToken.Reference;
                 VFXPlayerData.SetCloneCount(playerData, VFXPlayerData.GetCloneCount(playerData) + 1u);
-                redirectedPlayerIds.Add(lockstepPlayerId, VFXPlayerData.GetPlayerId(playerData));
-                if (lockstepPlayerId == localPlayerId)
+                redirectedPlayerIds.Add(joinedPlayerId, VFXPlayerData.GetPlayerId(playerData));
+                if (joinedPlayerId == localPlayerId)
                     redirectedLocalPlayerId = VFXPlayerData.GetPlayerId(playerData);
                 return;
             }
             playerData = VFXPlayerData.New(
-                playerId: lockstepPlayerId,
+                playerId: joinedPlayerId,
                 displayName: displayName,
                 ownedEffectCount: 0u,
                 cloneCount: 1u);
             playerDataToken = new DataToken(playerData);
-            redirectedPlayerIds.Add(lockstepPlayerId, lockstepPlayerId);
+            redirectedPlayerIds.Add(joinedPlayerId, joinedPlayerId);
             playerDataByName.Add(displayName, playerDataToken);
-            playerDataById.Add(lockstepPlayerId, playerDataToken);
+            playerDataById.Add(joinedPlayerId, playerDataToken);
         }
 
         [LockstepEvent(LockstepEventType.OnClientLeft)]
         public void OnClientLeft()
         {
-            redirectedPlayerIds.Remove(lockstepPlayerId, out DataToken redirectedPlayerIdToken);
+            redirectedPlayerIds.Remove(lockstep.LeftPlayerId, out DataToken redirectedPlayerIdToken);
             uint redirectedPlayerId = redirectedPlayerIdToken.UInt;
             object[] playerData = (object[])playerDataById[redirectedPlayerId].Reference;
             uint remainingCloneCount = VFXPlayerData.GetCloneCount(playerData) - 1u;
