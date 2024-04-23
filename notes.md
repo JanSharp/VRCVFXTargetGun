@@ -171,7 +171,8 @@ TODO: prevent interaction with the gun while lockstep is not initialized yet. So
 TODO: import/export support
 TODO: consider changing effects to be defined as an array of prefabs instead already existing in the world
 TODO: consider initializing all the effect buttons in the UI at build time
-TODO: consider moving more logic in general into on build
+TODO: consider moving more logic in general into on build, such has having effect containers, one per effect descriptor prefab
 TODO: place/delete mode toggle ball just does nothing
 TODO: add VR input to Q pick effects
 TODO: disable place/delete mode toggle while the gun is not held
+TODO: move font asset to common package
