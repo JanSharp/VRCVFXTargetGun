@@ -10,7 +10,7 @@ namespace JanSharp
 {
     public static class VFXPlayerData
     {
-        ///<summary>uint</summary>
+        ///<summary>int</summary>
         public const int PlayerId = 0;
         ///<summary>string</summary>
         public const int DisplayName = 1;
@@ -21,7 +21,7 @@ namespace JanSharp
         public const int ObjectSize = 4;
 
         public static object[] New(
-            uint playerId = default,
+            int playerId = default,
             string displayName = default,
             uint ownedEffectCount = default,
             uint cloneCount = default)
@@ -34,9 +34,9 @@ namespace JanSharp
             return vFXPlayerData;
         }
 
-        public static uint GetPlayerId(object[] vFXPlayerData)
-            => (uint)vFXPlayerData[PlayerId];
-        public static void SetPlayerId(object[] vFXPlayerData, uint playerId)
+        public static int GetPlayerId(object[] vFXPlayerData)
+            => (int)vFXPlayerData[PlayerId];
+        public static void SetPlayerId(object[] vFXPlayerData, int playerId)
             => vFXPlayerData[PlayerId] = playerId;
         public static string GetDisplayName(object[] vFXPlayerData)
             => (string)vFXPlayerData[DisplayName];

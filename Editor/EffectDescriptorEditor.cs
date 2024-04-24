@@ -52,7 +52,7 @@ namespace JanSharp
                     Debug.LogError("Unable to automatically determine the Effect Type because the EffectDescriptor doesn't have any children."
                         + " The first child must be the 'EffectParent' which is either the parent for a collection of particle systems,"
                         + " or the parent for an object. It is considered to be an object whenever there are no particle systems"
-                        + " and if any particle system is looped the it is considered to be a loop effect."
+                        + " and if any particle system is looped then it is considered to be a loop effect."
                         + " Warnings are emitted in unclear scenarios.", target);
                 }
                 else

@@ -12,7 +12,7 @@ return {
   class_name = "VFXEffectData",
   fields = {
     {type = "uint", name = "effectId"},
-    {type = "uint", name = "owningPlayerId"},
+    {type = "int", name = "owningPlayerId"},
     {type = "object[]", name = "owningPlayerData"},
     {type = "uint", name = "createdTick"},
     {type = "EffectDescriptor", name = "descriptor"},

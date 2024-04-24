@@ -11,6 +11,9 @@ namespace JanSharp
     {
         [HideInInspector] public string effectName;
         public string EffectName => effectName;
+        [Tooltip("Every effect must have a unique name in order for import/export to be able to link up "
+            + "effects from previous versions of worlds where a different set of effects was in the world.")]
+        public string uniqueName;
         [Tooltip("The effect will always face away from/be parallel to the object it is placed on, "
             + "however by default the effect also faces away from the gun as much as possible. "
             + "When this is true said second rotation is random.")]

@@ -12,7 +12,7 @@ namespace JanSharp
     {
         ///<summary>uint</summary>
         public const int EffectId = 0;
-        ///<summary>uint</summary>
+        ///<summary>int</summary>
         public const int OwningPlayerId = 1;
         ///<summary>object[]</summary>
         public const int OwningPlayerData = 2;
@@ -32,7 +32,7 @@ namespace JanSharp
 
         public static object[] New(
             uint effectId = default,
-            uint owningPlayerId = default,
+            int owningPlayerId = default,
             object[] owningPlayerData = default,
             uint createdTick = default,
             EffectDescriptor descriptor = default,
@@ -58,9 +58,9 @@ namespace JanSharp
             => (uint)vFXEffectData[EffectId];
         public static void SetEffectId(object[] vFXEffectData, uint effectId)
             => vFXEffectData[EffectId] = effectId;
-        public static uint GetOwningPlayerId(object[] vFXEffectData)
-            => (uint)vFXEffectData[OwningPlayerId];
-        public static void SetOwningPlayerId(object[] vFXEffectData, uint owningPlayerId)
+        public static int GetOwningPlayerId(object[] vFXEffectData)
+            => (int)vFXEffectData[OwningPlayerId];
+        public static void SetOwningPlayerId(object[] vFXEffectData, int owningPlayerId)
             => vFXEffectData[OwningPlayerId] = owningPlayerId;
         public static object[] GetOwningPlayerData(object[] vFXEffectData)
             => (object[])vFXEffectData[OwningPlayerData];

@@ -13,24 +13,25 @@ namespace JanSharp
     {
         public override string GameStateInternalName => "jansharp.vfx-target-gun";
         public override string GameStateDisplayName => "VFX Target Gun";
-        public override bool GameStateSupportsImportExport => false;
+        public override bool GameStateSupportsImportExport => true;
         public override uint GameStateDataVersion => 0u;
         public override uint GameStateLowestSupportedDataVersion => 0u;
         [HideInInspector] public LockstepAPI lockstep;
         private uint localPlayerId;
         private string localPlayerDisplayName;
-        private uint redirectedLocalPlayerId;
+        private int redirectedLocalPlayerId;
 
         #region game state
-        ///<summary>uint playerId => object[] VFXPlayerData</summary>
+        ///<summary>int playerId => object[] VFXPlayerData</summary>
         private DataDictionary playerDataById = new DataDictionary();
         ///<summary>string displayName => object[] VFXPlayerData</summary>
         private DataDictionary playerDataByName = new DataDictionary();
-        ///<summary>uint redirectedPlayerId => uint playerId</summary>
+        ///<summary>int redirectedPlayerId => int playerId</summary>
         private DataDictionary redirectedPlayerIds = new DataDictionary();
         ///<summary>uint effectId => object[] VFXEffectData</summary>
         private DataDictionary effectsById = new DataDictionary();
         private uint nextEffectId = 1u;
+        private int nextImportedPlayerId = -1;
         #endregion
 
         private object[][] effectsToPlay = new object[ArrList.MinCapacity][];
@@ -581,7 +582,7 @@ namespace JanSharp
         {
             localPlayerId = (uint)Networking.LocalPlayer.playerId;
             localPlayerDisplayName = Networking.LocalPlayer.displayName;
-            redirectedLocalPlayerId = localPlayerId;
+            redirectedLocalPlayerId = (int)localPlayerId;
             IsVisible = initialVisibility;
         }
 
@@ -1118,9 +1119,9 @@ namespace JanSharp
             SendCustomEventDelayedFrames(nameof(PlayOrStopNextEffect), 1);
         }
 
-        private uint GetRedirectedPlayerId(uint playerId)
+        private int GetRedirectedPlayerId(int playerId)
         {
-            return redirectedPlayerIds[playerId].UInt;
+            return redirectedPlayerIds[playerId].Int;
         }
 
         private void SendPlayEffectIA(EffectDescriptor descriptor, Vector3 position, Quaternion rotation)
@@ -1184,6 +1185,11 @@ namespace JanSharp
             uint effectId = nextEffectId++;
             object[] effectData;
 
+            int owningPlayerId = GetRedirectedPlayerId((int)lockstep.SendingPlayerId);
+            object[] owningPlayerData = (object[])playerDataById[owningPlayerId].Reference;
+            VFXPlayerData.SetOwnedEffectCount(owningPlayerData, VFXPlayerData.GetOwnedEffectCount(owningPlayerData) + 1u);
+            Debug.Log($"<dlt> OnPlayEffectIA - ownedEffectCount: {VFXPlayerData.GetOwnedEffectCount(owningPlayerData)}");
+
             // Handle latency state.
             if (effectsByUniqueId.Remove(lockstep.SendingUniqueId, out DataToken effectDataToken))
             {
@@ -1203,9 +1209,6 @@ namespace JanSharp
                 return;
             }
 
-            uint owningPlayerId = GetRedirectedPlayerId(lockstep.SendingPlayerId);
-            object[] owningPlayerData = (object[])playerDataById[owningPlayerId].Reference;
-            VFXPlayerData.SetOwnedEffectCount(owningPlayerData, VFXPlayerData.GetOwnedEffectCount(owningPlayerData) + 1u);
             effectData = VFXEffectData.New(
                 effectId: effectId,
                 owningPlayerId: owningPlayerId,
@@ -1239,6 +1242,7 @@ namespace JanSharp
         {
             uint ownedEffectCount = VFXPlayerData.GetOwnedEffectCount(playerData) - 1u;
             VFXPlayerData.SetOwnedEffectCount(playerData, ownedEffectCount);
+            Debug.Log($"<dlt> DecrementOwnedEffectCount - ownedEffectCount: {ownedEffectCount}");
             if (ownedEffectCount == 0)
                 RemovePlayerDataWithoutClones(playerData);
         }
@@ -1312,6 +1316,11 @@ namespace JanSharp
         {
             if (!initialized)
                 Init();
+            StopAllEffectsInGameState();
+        }
+
+        private void StopAllEffectsInGameState()
+        {
             DataList effectsList = effectsById.GetValues();
             int count = effectsList.Count;
             for (int i = 0; i < count; i++)
@@ -1328,7 +1337,7 @@ namespace JanSharp
             }
         }
 
-        private void SendStopAllEffectsOwnedByIA(uint owningPlayerId)
+        private void SendStopAllEffectsOwnedByIA(int owningPlayerId)
         {
             lockstep.WriteSmall(owningPlayerId);
             lockstep.SendInputAction(stopAllEffectsOwnedByIAId);
@@ -1345,7 +1354,7 @@ namespace JanSharp
         {
             if (!initialized)
                 Init();
-            uint owningPlayerId = lockstep.ReadSmallUInt();
+            int owningPlayerId = lockstep.ReadSmallInt();
             DataList effectsList = effectsById.GetValues();
             int count = effectsList.Count;
             for (int i = 0; i < count; i++)
@@ -1402,18 +1411,11 @@ namespace JanSharp
                 object[] effectData = (object[])effectsList[i].Reference;
                 if (VFXEffectData.GetDescriptor(effectData) == descriptor)
                 {
+                    object[] playerData = VFXEffectData.GetOwningPlayerData(effectData);
+                    VFXPlayerData.SetOwnedEffectCount(playerData, VFXPlayerData.GetOwnedEffectCount(playerData) - 1u);
                     effectsById.Remove(VFXEffectData.GetEffectId(effectData));
                     EnqueueEffectToStop(effectData);
                 }
-            }
-
-            DataList playersList = playerDataById.GetValues();
-            count = playersList.Count;
-            for (int i = 0; i < count; i++)
-            {
-                object[] playerData = (object[])playersList[i].Reference;
-                VFXPlayerData.SetOwnedEffectCount(playerData, 0u);
-                RemovePlayerDataWithoutClones(playerData);
             }
         }
 
@@ -1422,7 +1424,7 @@ namespace JanSharp
             SendStopAllEffectsForOneDescriptorOwnedByIA(descriptor, redirectedLocalPlayerId);
         }
 
-        private void SendStopAllEffectsForOneDescriptorOwnedByIA(EffectDescriptor descriptor, uint owningPlayerId)
+        private void SendStopAllEffectsForOneDescriptorOwnedByIA(EffectDescriptor descriptor, int owningPlayerId)
         {
             lockstep.WriteSmall((uint)descriptor.Index);
             lockstep.WriteSmall(owningPlayerId);
@@ -1441,16 +1443,18 @@ namespace JanSharp
             if (!initialized)
                 Init();
             int descriptorIndex = (int)lockstep.ReadSmallUInt();
-            uint owningPlayerId = lockstep.ReadSmallUInt();
+            int owningPlayerId = lockstep.ReadSmallInt();
             EffectDescriptor descriptor = descriptors[descriptorIndex];
             DataList effectsList = effectsById.GetValues();
             int count = effectsList.Count;
+            uint stoppedCount = 0;
             for (int i = 0; i < count; i++)
             {
                 object[] effectData = (object[])effectsList[i].Reference;
                 if (VFXEffectData.GetDescriptor(effectData) == descriptor
                     && VFXEffectData.GetOwningPlayerId(effectData) == owningPlayerId)
                 {
+                    stoppedCount++;
                     effectsById.Remove(VFXEffectData.GetEffectId(effectData));
                     EnqueueEffectToStop(effectData);
                 }
@@ -1460,15 +1464,15 @@ namespace JanSharp
             if (!playerDataById.TryGetValue(owningPlayerId, out DataToken playerDataToken))
                 return;
             object[] playerData = (object[])playerDataToken.Reference;
-            VFXPlayerData.SetOwnedEffectCount(playerData, 0u);
+            VFXPlayerData.SetOwnedEffectCount(playerData, VFXPlayerData.GetOwnedEffectCount(playerData) - stoppedCount);
             RemovePlayerDataWithoutClones(playerData);
         }
 
         [LockstepEvent(LockstepEventType.OnClientJoined)]
         public void OnClientJoined()
         {
-            uint joinedPlayerId = lockstep.JoinedPlayerId;
-            string displayName = lockstep.GetDisplayName(joinedPlayerId);
+            int joinedPlayerId = (int)lockstep.JoinedPlayerId;
+            string displayName = lockstep.GetDisplayName((uint)joinedPlayerId);
             object[] playerData;
             DataToken playerDataToken;
             if (playerDataByName.TryGetValue(displayName, out playerDataToken))
@@ -1494,8 +1498,8 @@ namespace JanSharp
         [LockstepEvent(LockstepEventType.OnClientLeft)]
         public void OnClientLeft()
         {
-            redirectedPlayerIds.Remove(lockstep.LeftPlayerId, out DataToken redirectedPlayerIdToken);
-            uint redirectedPlayerId = redirectedPlayerIdToken.UInt;
+            redirectedPlayerIds.Remove((int)lockstep.LeftPlayerId, out DataToken redirectedPlayerIdToken);
+            int redirectedPlayerId = redirectedPlayerIdToken.Int;
             object[] playerData = (object[])playerDataById[redirectedPlayerId].Reference;
             uint remainingCloneCount = VFXPlayerData.GetCloneCount(playerData) - 1u;
             VFXPlayerData.SetCloneCount(playerData, remainingCloneCount);
@@ -1510,36 +1514,57 @@ namespace JanSharp
             if (!initialized)
                 Init();
 
+            if (isExport)
+            {
+                lockstep.WriteSmall((uint)descriptors.Length);
+                foreach (EffectDescriptor descriptor in descriptors)
+                    lockstep.Write((descriptor.IsToggle && descriptor.ActiveCount != 0) ? descriptor.uniqueName : null);
+            }
+
+            if (!isExport)
+                lockstep.WriteSmall((uint)-nextImportedPlayerId);
+
             int playerDataCount = playerDataById.Count;
             lockstep.WriteSmall((uint)playerDataCount);
             DataList playerDataList = playerDataById.GetValues();
             for (int i = 0; i < playerDataCount; i++)
             {
                 object[] playerData = (object[])playerDataList[i].Reference;
+                uint ownedEffectCount = VFXPlayerData.GetOwnedEffectCount(playerData);
+                lockstep.WriteSmall(ownedEffectCount);
+                Debug.Log($"<dlt> SerializeGameState - ownedEffectCount: {ownedEffectCount}");
+                if (isExport && ownedEffectCount == 0)
+                    continue;
                 lockstep.WriteSmall(VFXPlayerData.GetPlayerId(playerData));
                 lockstep.Write(VFXPlayerData.GetDisplayName(playerData));
-                lockstep.WriteSmall(VFXPlayerData.GetOwnedEffectCount(playerData));
-                lockstep.WriteSmall(VFXPlayerData.GetCloneCount(playerData));
+                if (!isExport)
+                    lockstep.WriteSmall(VFXPlayerData.GetCloneCount(playerData));
             }
 
-            int redirectedCount = redirectedPlayerIds.Count;
-            lockstep.WriteSmall((uint)redirectedCount);
-            DataList redirectedKeys = redirectedPlayerIds.GetKeys();
-            DataList redirectedValues = redirectedPlayerIds.GetValues();
-            for (int i = 0; i < redirectedCount; i++)
+            if (!isExport)
             {
-                lockstep.WriteSmall(redirectedKeys[i].UInt);
-                lockstep.WriteSmall(redirectedValues[i].UInt);
+                int redirectedCount = redirectedPlayerIds.Count;
+                lockstep.WriteSmall((uint)redirectedCount);
+                DataList redirectedKeys = redirectedPlayerIds.GetKeys();
+                DataList redirectedValues = redirectedPlayerIds.GetValues();
+                for (int i = 0; i < redirectedCount; i++)
+                {
+                    lockstep.WriteSmall(redirectedKeys[i].Int);
+                    lockstep.WriteSmall(redirectedValues[i].Int);
+                }
             }
 
-            lockstep.WriteSmall(nextEffectId);
+            if (!isExport)
+                lockstep.WriteSmall(nextEffectId);
+
             int effectCount = effectsById.Count;
             lockstep.WriteSmall((uint)effectCount);
             DataList effectsList = effectsById.GetValues();
             for (int i = 0; i < effectCount; i++)
             {
                 object[] effectData = (object[])effectsList[i].Reference;
-                lockstep.WriteSmall(VFXEffectData.GetEffectId(effectData));
+                if (!isExport)
+                    lockstep.WriteSmall(VFXEffectData.GetEffectId(effectData));
                 lockstep.WriteSmall(VFXEffectData.GetOwningPlayerId(effectData));
                 lockstep.WriteSmall(VFXEffectData.GetCreatedTick(effectData));
                 lockstep.WriteSmall((uint)VFXEffectData.GetDescriptor(effectData).Index);
@@ -1553,44 +1578,115 @@ namespace JanSharp
             if (!initialized)
                 Init();
 
+            DataDictionary descriptorRemap = isImport ? new DataDictionary() : null;
+            DataDictionary playerRemap = isImport ? new DataDictionary() : null;
+            if (isImport)
+            {
+                StopAllEffectsInLatencyState();
+                StopAllEffectsInGameState();
+
+                DataDictionary knownEffectNameLut = new DataDictionary();
+                foreach (EffectDescriptor descriptor in descriptors)
+                    knownEffectNameLut.Add(descriptor.uniqueName, descriptor.Index);
+                int descriptorCount = (int)lockstep.ReadSmallUInt();
+                for (int i = 0; i < descriptorCount; i++)
+                {
+                    string uniqueName = lockstep.ReadString();
+                    if (uniqueName != null && knownEffectNameLut.TryGetValue(uniqueName, out DataToken knownIndexToken))
+                        descriptorRemap.Add(i, knownIndexToken);
+                }
+            }
+
+            if (!isImport)
+                nextImportedPlayerId = -(int)lockstep.ReadSmallUInt();
+
             int playerDataCount = (int)lockstep.ReadSmallUInt();
             for (int i = 0; i < playerDataCount; i++)
             {
-                uint playerId = lockstep.ReadSmallUInt();
+                uint ownedEffectCount = lockstep.ReadSmallUInt();
+                if (isImport && ownedEffectCount == 0)
+                    continue;
+                int playerId = lockstep.ReadSmallInt();
                 string displayName = lockstep.ReadString();
-                object[] playerData = VFXPlayerData.New(
-                    playerId: playerId,
-                    displayName: displayName,
-                    ownedEffectCount: lockstep.ReadSmallUInt(),
-                    cloneCount: lockstep.ReadSmallUInt());
-                DataToken playerDataToken = new DataToken(playerData);
-                playerDataById.Add(playerId, playerDataToken);
-                playerDataByName.Add(displayName, playerDataToken);
+                uint cloneCount = isImport ? 0u : lockstep.ReadSmallUInt();
+                DataToken playerDataToken;
+                if (!isImport)
+                {
+                    object[] playerData = VFXPlayerData.New(
+                        playerId: playerId,
+                        displayName: displayName,
+                        ownedEffectCount: ownedEffectCount,
+                        cloneCount: cloneCount);
+                    playerDataToken = new DataToken(playerData);
+                    playerDataById.Add(playerId, playerDataToken);
+                    playerDataByName.Add(displayName, playerDataToken);
 
-                if (displayName == localPlayerDisplayName)
-                    redirectedLocalPlayerId = playerId;
+                    if (displayName == localPlayerDisplayName)
+                        redirectedLocalPlayerId = playerId;
+                    continue;
+                }
+
+                int knownPlayerId;
+                if (playerDataByName.TryGetValue(displayName, out playerDataToken))
+                {
+                    object[] playerData = (object[])playerDataToken.Reference;
+                    knownPlayerId = VFXPlayerData.GetPlayerId(playerData);
+                    VFXPlayerData.SetOwnedEffectCount(playerData, VFXPlayerData.GetOwnedEffectCount(playerData) + ownedEffectCount);
+                }
+                else
+                {
+                    knownPlayerId = nextImportedPlayerId--;
+                    object[] playerData = VFXPlayerData.New(
+                        playerId: knownPlayerId,
+                        displayName: displayName,
+                        ownedEffectCount: ownedEffectCount,
+                        cloneCount: 0u);
+                    playerDataToken = new DataToken(playerData);
+                    playerDataById.Add(knownPlayerId, playerDataToken);
+                    playerDataByName.Add(displayName, playerDataToken);
+                }
+                playerRemap.Add(playerId, knownPlayerId);
             }
 
-            int redirectedCount = (int)lockstep.ReadSmallUInt();
-            for (int i = 0; i < redirectedCount; i++)
+            if (!isImport)
             {
-                uint redirectedPlayerId = lockstep.ReadSmallUInt();
-                uint playerId = lockstep.ReadSmallUInt();
-                redirectedPlayerIds.Add(redirectedPlayerId, playerId);
+                int redirectedCount = (int)lockstep.ReadSmallUInt();
+                for (int i = 0; i < redirectedCount; i++)
+                {
+                    int redirectedPlayerId = lockstep.ReadSmallInt();
+                    int playerId = lockstep.ReadSmallInt();
+                    redirectedPlayerIds.Add(redirectedPlayerId, playerId);
+                }
             }
 
-            nextEffectId = lockstep.ReadSmallUInt();
+            if (!isImport)
+                nextEffectId = lockstep.ReadSmallUInt();
+
             int effectCount = (int)lockstep.ReadSmallUInt();
             for (int i = 0; i < effectCount; i++)
             {
-                uint effectId = lockstep.ReadSmallUInt();
-                uint owningPlayerId = lockstep.ReadSmallUInt();
+                uint effectId = isImport ? nextEffectId++ : lockstep.ReadSmallUInt();
+                int owningPlayerId = lockstep.ReadSmallInt();
+                if (isImport)
+                    owningPlayerId = playerRemap[owningPlayerId].Int;
+                object[] owningPlayerData = (object[])playerDataById[owningPlayerId].Reference;
+                uint createdTick = lockstep.ReadSmallUInt();
+                int descriptorIndex = (int)lockstep.ReadSmallUInt();
+                if (isImport)
+                {
+                    if (!descriptorRemap.TryGetValue(descriptorIndex, out DataToken knownIndexToken))
+                    {
+                        DecrementOwnedEffectCount(owningPlayerData);
+                        continue;
+                    }
+                    descriptorIndex = knownIndexToken.Int;
+                }
                 object[] effectData = VFXEffectData.New(
                     effectId: effectId,
                     owningPlayerId: owningPlayerId,
-                    owningPlayerData: (object[])playerDataById[owningPlayerId].Reference,
-                    createdTick: lockstep.ReadSmallUInt(),
-                    descriptor: descriptors[lockstep.ReadSmallUInt()],
+                    owningPlayerData: owningPlayerData,
+                    createdTick: createdTick,
+                    descriptor: descriptors[descriptorIndex],
                     position: lockstep.ReadVector3(),
                     rotation: lockstep.ReadQuaternion());
                 effectsById.Add(effectId, new DataToken(effectData));

@@ -11,7 +11,7 @@ return {
   namespace = "JanSharp",
   class_name = "VFXPlayerData",
   fields = {
-    {type = "uint", name = "playerId"},
+    {type = "int", name = "playerId"},
     {type = "string", name = "displayName"},
     {type = "uint", name = "ownedEffectCount"},
     {type = "uint", name = "cloneCount"},
