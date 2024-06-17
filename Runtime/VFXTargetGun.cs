@@ -1126,9 +1126,9 @@ namespace JanSharp
 
         private void SendPlayEffectIA(EffectDescriptor descriptor, Vector3 position, Quaternion rotation)
         {
-            lockstep.WriteSmall((uint)descriptor.Index);
-            lockstep.Write(position);
-            lockstep.Write(rotation);
+            lockstep.WriteSmallUInt((uint)descriptor.Index);
+            lockstep.WriteVector3(position);
+            lockstep.WriteQuaternion(rotation);
             ulong uniqueId = lockstep.SendInputAction(playEffectIAId);
             if (uniqueId == 0uL)
                 return;
@@ -1224,7 +1224,7 @@ namespace JanSharp
 
         private void SendStopEffectIA(uint effectId)
         {
-            lockstep.WriteSmall(effectId);
+            lockstep.WriteSmallUInt(effectId);
             ulong uniqueId = lockstep.SendInputAction(stopEffectIAId);
             if (uniqueId == 0uL)
                 return;
@@ -1339,7 +1339,7 @@ namespace JanSharp
 
         private void SendStopAllEffectsOwnedByIA(int owningPlayerId)
         {
-            lockstep.WriteSmall(owningPlayerId);
+            lockstep.WriteSmallInt(owningPlayerId);
             lockstep.SendInputAction(stopAllEffectsOwnedByIAId);
 
             // Handle latency state.
@@ -1389,7 +1389,7 @@ namespace JanSharp
 
         public void SendStopAllEffectsForOneDescriptorIA(EffectDescriptor descriptor)
         {
-            lockstep.WriteSmall((uint)descriptor.Index);
+            lockstep.WriteSmallUInt((uint)descriptor.Index);
             lockstep.SendInputAction(stopAllEffectsForOneDescriptorIAId);
 
             // Handle latency state.
@@ -1426,8 +1426,8 @@ namespace JanSharp
 
         private void SendStopAllEffectsForOneDescriptorOwnedByIA(EffectDescriptor descriptor, int owningPlayerId)
         {
-            lockstep.WriteSmall((uint)descriptor.Index);
-            lockstep.WriteSmall(owningPlayerId);
+            lockstep.WriteSmallUInt((uint)descriptor.Index);
+            lockstep.WriteSmallInt(owningPlayerId);
             lockstep.SendInputAction(stopAllEffectsForOneDescriptorOwnedByIAId);
 
             // Handle latency state.
@@ -1516,60 +1516,60 @@ namespace JanSharp
 
             if (isExport)
             {
-                lockstep.WriteSmall((uint)descriptors.Length);
+                lockstep.WriteSmallUInt((uint)descriptors.Length);
                 foreach (EffectDescriptor descriptor in descriptors)
-                    lockstep.Write((descriptor.IsToggle && descriptor.ActiveCount != 0) ? descriptor.uniqueName : null);
+                    lockstep.WriteString((descriptor.IsToggle && descriptor.ActiveCount != 0) ? descriptor.uniqueName : null);
             }
 
             if (!isExport)
-                lockstep.WriteSmall((uint)-nextImportedPlayerId);
+                lockstep.WriteSmallUInt((uint)-nextImportedPlayerId);
 
             int playerDataCount = playerDataById.Count;
-            lockstep.WriteSmall((uint)playerDataCount);
+            lockstep.WriteSmallUInt((uint)playerDataCount);
             DataList playerDataList = playerDataById.GetValues();
             for (int i = 0; i < playerDataCount; i++)
             {
                 object[] playerData = (object[])playerDataList[i].Reference;
                 uint ownedEffectCount = VFXPlayerData.GetOwnedEffectCount(playerData);
-                lockstep.WriteSmall(ownedEffectCount);
+                lockstep.WriteSmallUInt(ownedEffectCount);
                 Debug.Log($"<dlt> SerializeGameState - ownedEffectCount: {ownedEffectCount}");
                 if (isExport && ownedEffectCount == 0)
                     continue;
-                lockstep.WriteSmall(VFXPlayerData.GetPlayerId(playerData));
-                lockstep.Write(VFXPlayerData.GetDisplayName(playerData));
+                lockstep.WriteSmallInt(VFXPlayerData.GetPlayerId(playerData));
+                lockstep.WriteString(VFXPlayerData.GetDisplayName(playerData));
                 if (!isExport)
-                    lockstep.WriteSmall(VFXPlayerData.GetCloneCount(playerData));
+                    lockstep.WriteSmallUInt(VFXPlayerData.GetCloneCount(playerData));
             }
 
             if (!isExport)
             {
                 int redirectedCount = redirectedPlayerIds.Count;
-                lockstep.WriteSmall((uint)redirectedCount);
+                lockstep.WriteSmallUInt((uint)redirectedCount);
                 DataList redirectedKeys = redirectedPlayerIds.GetKeys();
                 DataList redirectedValues = redirectedPlayerIds.GetValues();
                 for (int i = 0; i < redirectedCount; i++)
                 {
-                    lockstep.WriteSmall(redirectedKeys[i].Int);
-                    lockstep.WriteSmall(redirectedValues[i].Int);
+                    lockstep.WriteSmallInt(redirectedKeys[i].Int);
+                    lockstep.WriteSmallInt(redirectedValues[i].Int);
                 }
             }
 
             if (!isExport)
-                lockstep.WriteSmall(nextEffectId);
+                lockstep.WriteSmallUInt(nextEffectId);
 
             int effectCount = effectsById.Count;
-            lockstep.WriteSmall((uint)effectCount);
+            lockstep.WriteSmallUInt((uint)effectCount);
             DataList effectsList = effectsById.GetValues();
             for (int i = 0; i < effectCount; i++)
             {
                 object[] effectData = (object[])effectsList[i].Reference;
                 if (!isExport)
-                    lockstep.WriteSmall(VFXEffectData.GetEffectId(effectData));
-                lockstep.WriteSmall(VFXEffectData.GetOwningPlayerId(effectData));
-                lockstep.WriteSmall(VFXEffectData.GetCreatedTick(effectData));
-                lockstep.WriteSmall((uint)VFXEffectData.GetDescriptor(effectData).Index);
-                lockstep.Write(VFXEffectData.GetPosition(effectData));
-                lockstep.Write(VFXEffectData.GetRotation(effectData));
+                    lockstep.WriteSmallUInt(VFXEffectData.GetEffectId(effectData));
+                lockstep.WriteSmallInt(VFXEffectData.GetOwningPlayerId(effectData));
+                lockstep.WriteSmallUInt(VFXEffectData.GetCreatedTick(effectData));
+                lockstep.WriteSmallUInt((uint)VFXEffectData.GetDescriptor(effectData).Index);
+                lockstep.WriteVector3(VFXEffectData.GetPosition(effectData));
+                lockstep.WriteQuaternion(VFXEffectData.GetRotation(effectData));
             }
         }
 
