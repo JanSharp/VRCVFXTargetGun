@@ -163,18 +163,24 @@ I decided against toggling between just modifying stuff placed by the local play
 
 # Version 0.5.0
 
-edit mode
-
 BUG: neither shift nor control tab moves effect selection backwards
-TODO: set time for loop effects once caught up has been raised.
-TODO: prevent interaction with the gun while lockstep is not initialized yet. So wait until OnInit or OnClientBeginCatchUp
-TODO: consider changing effects to be defined as an array of prefabs instead already existing in the world
-TODO: consider initializing all the effect buttons in the UI at build time
-TODO: consider moving more logic in general into on build, such has having effect containers, one per effect descriptor prefab
-TODO: place/delete mode toggle ball just does nothing
-TODO: add VR input to Q pick effects
-TODO: disable place/delete mode toggle while the gun is not held
-TODO: move font asset to common package, plus all the sprites tbh
-TODO: fix importing (and presumably deserializing in general) changing the currently used random rotation of effects. Like the preview, you know
-TODO: remake/improve target indicator arrow to be lower poly and to have proper normals to actually look round
-TODO: add custom icon support for effects
+- [ ] set time for loop effects once caught up has been raised.
+- [ ] prevent interaction with the gun while lockstep is not initialized yet. So wait until OnInit or OnClientBeginCatchUp
+- [ ] consider changing effects to be defined as an array of prefabs instead already existing in the world
+- [ ] consider initializing all the effect buttons in the UI at build time
+- [ ] consider moving more logic in general into on build, such has having effect containers, one per effect descriptor prefab
+- [ ] place/delete mode toggle ball just does nothing
+- [ ] add VR input to Q pick effects
+- [ ] disable place/delete mode toggle while the gun is not held
+- [ ] move font asset to common package, plus all the sprites tbh
+- [ ] fix importing (and presumably deserializing in general) changing the currently used random rotation of effects. Like the preview, you know
+- [ ] remake/improve target indicator arrow to be lower poly and to have proper normals to actually look round
+- [ ] add custom icon support for effects
+- [ ] change highlighted object to use a shader that always renders above everything else, to prevent z fighting and remove the slight up scale attempt
+- [ ] change the laser and target indicator to use a shader which ignores pretty much the entire environment
+- [ ] change target indicator to scale with distance from the player, making it less obnoxious up close
+- [ ] remake UI style, having a dark color as the base and using only a few color accents here and there, like color rims instead of fills
+- [ ] add edit mode
+  - [ ] use transform gizmo
+  - [ ] maybe have another movement mode that simply attaches objects to the hand
+  - [ ] maybe have a rotation mode which simply uses the rotation of the hand that the gun is not held in
