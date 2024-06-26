@@ -179,8 +179,15 @@ BUG: neither shift nor control tab moves effect selection backwards
 - [ ] change highlighted object to use a shader that always renders above everything else, to prevent z fighting and remove the slight up scale attempt
 - [ ] change the laser and target indicator to use a shader which ignores pretty much the entire environment
 - [ ] change target indicator to scale with distance from the player, making it less obnoxious up close
+- [ ] use screen center for everything in desktop, not the gun raycast origin (AimPoint)
 - [ ] remake UI style, having a dark color as the base and using only a few color accents here and there, like color rims instead of fills
 - [ ] add edit mode
-  - [ ] use transform gizmo
+  - [x] use transform gizmo
   - [ ] maybe have another movement mode that simply attaches objects to the hand
   - [ ] maybe have a rotation mode which simply uses the rotation of the hand that the gun is not held in
+  - [ ] reset scale when playing an effect
+  - [ ] limit it to object effects
+  - [ ] fix highlight having no distance limit when an effect is selected
+  - [ ] syncing
+  - [ ] disable laser while in desktop mode with gizmo active
+  - [ ] snapping input for VR

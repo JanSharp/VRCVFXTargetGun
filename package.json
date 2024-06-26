@@ -13,7 +13,8 @@
   "vpmDependencies": {
     "com.vrchat.worlds": "^3.4.x",
     "com.jansharp.common": ">=0.1.2",
-    "com.jansharp.lockstep": ">=0.1.0"
+    "com.jansharp.lockstep": ">=0.1.0",
+    "com.jansharp.transform-gizmo": ">=0.1.0"
   },
   "url": "https://github.com/JanSharp/VRCVFXTargetGun/releases/download/v0.5.0/com.jansharp.vfx-target-gun.zip",
   "changelogUrl": "https://github.com/JanSharp/VRCVFXTargetGun/blob/v0.5.0/CHANGELOG.md"

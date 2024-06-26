@@ -3,6 +3,7 @@
     "references": [
         "JanSharp.Common",
         "JanSharp.Lockstep",
+        "JanSharp.TransformGizmo",
         "UdonSharp.Runtime",
         "VRC.SDK3",
         "VRC.SDKBase",

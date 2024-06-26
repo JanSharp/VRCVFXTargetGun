@@ -21,6 +21,11 @@ namespace JanSharp
             }
         }
 
+        public override void OnPickupUseUp()
+        {
+            gun.ReceivedOnPickupUseUp();
+        }
+
         public override void OnPickup() => gun.IsHeld = true;
 
         public override void OnDrop() => gun.IsHeld = false;

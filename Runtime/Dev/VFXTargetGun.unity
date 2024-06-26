@@ -278,6 +278,11 @@ PrefabInstance:
       propertyPath: stopAllEffectsForOneDescriptorOwnedByIAId
       value: 21
       objectReference: {fileID: 0}
+    - target: {fileID: 3122936710463789831, guid: 178a83ef9ab17996a8e36c2fe71895f2,
+        type: 3}
+      propertyPath: _syncMethod
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 3310048966486575587, guid: 178a83ef9ab17996a8e36c2fe71895f2,
         type: 3}
       propertyPath: serializedProgramAsset
@@ -497,6 +502,18 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7671096754304149023, guid: 178a83ef9ab17996a8e36c2fe71895f2,
+        type: 3}
+      propertyPath: serializationData.Prefab
+      value: 
+      objectReference: {fileID: 7671096754304149023, guid: 178a83ef9ab17996a8e36c2fe71895f2,
+        type: 3}
+    - target: {fileID: 7729977124234624184, guid: 178a83ef9ab17996a8e36c2fe71895f2,
+        type: 3}
+      propertyPath: serializationData.Prefab
+      value: 
+      objectReference: {fileID: 7729977124234624184, guid: 178a83ef9ab17996a8e36c2fe71895f2,
+        type: 3}
     - target: {fileID: 8008703788196259647, guid: 178a83ef9ab17996a8e36c2fe71895f2,
         type: 3}
       propertyPath: m_AnchorMax.y
@@ -3248,6 +3265,12 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 14
   m_LocalEulerAnglesHint: {x: -90.00001, y: 0, z: -90.00001}
+--- !u!1 &667499938 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7729977124234609478, guid: 178a83ef9ab17996a8e36c2fe71895f2,
+    type: 3}
+  m_PrefabInstance: {fileID: 221483996}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &693188132
 GameObject:
   m_ObjectHideFlags: 0
@@ -8135,6 +8158,12 @@ GameObject:
 --- !u!23 &806745663 stripped
 MeshRenderer:
   m_CorrespondingSourceObject: {fileID: 868459280172859762, guid: 178a83ef9ab17996a8e36c2fe71895f2,
+    type: 3}
+  m_PrefabInstance: {fileID: 221483996}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &809580468 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3888297826056538092, guid: 178a83ef9ab17996a8e36c2fe71895f2,
     type: 3}
   m_PrefabInstance: {fileID: 221483996}
   m_PrefabAsset: {fileID: 0}
@@ -29898,12 +29927,12 @@ PrefabInstance:
     - target: {fileID: 6759095419728963412, guid: 8894fa7e4588a5c4fab98453e558847d,
         type: 3}
       propertyPath: NetworkIDs.Array.size
-      value: 37
+      value: 39
       objectReference: {fileID: 0}
     - target: {fileID: 6759095419728963412, guid: 8894fa7e4588a5c4fab98453e558847d,
         type: 3}
       propertyPath: DynamicMaterials.Array.size
-      value: 5
+      value: 6
       objectReference: {fileID: 0}
     - target: {fileID: 6759095419728963412, guid: 8894fa7e4588a5c4fab98453e558847d,
         type: 3}
@@ -30097,9 +30126,14 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6759095419728963412, guid: 8894fa7e4588a5c4fab98453e558847d,
         type: 3}
+      propertyPath: NetworkIDs.Array.data[38].ID
+      value: 59
+      objectReference: {fileID: 0}
+    - target: {fileID: 6759095419728963412, guid: 8894fa7e4588a5c4fab98453e558847d,
+        type: 3}
       propertyPath: DynamicMaterials.Array.data[0]
       value: 
-      objectReference: {fileID: 10303, guid: 0000000000000000f000000000000000, type: 0}
+      objectReference: {fileID: 10308, guid: 0000000000000000f000000000000000, type: 0}
     - target: {fileID: 6759095419728963412, guid: 8894fa7e4588a5c4fab98453e558847d,
         type: 3}
       propertyPath: DynamicMaterials.Array.data[1]
@@ -30109,22 +30143,22 @@ PrefabInstance:
         type: 3}
       propertyPath: DynamicMaterials.Array.data[2]
       value: 
-      objectReference: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+      objectReference: {fileID: 2100000, guid: e26117a898716b736801a7c7080cd3bb, type: 2}
     - target: {fileID: 6759095419728963412, guid: 8894fa7e4588a5c4fab98453e558847d,
         type: 3}
       propertyPath: DynamicMaterials.Array.data[3]
       value: 
-      objectReference: {fileID: 10308, guid: 0000000000000000f000000000000000, type: 0}
+      objectReference: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
     - target: {fileID: 6759095419728963412, guid: 8894fa7e4588a5c4fab98453e558847d,
         type: 3}
       propertyPath: DynamicMaterials.Array.data[4]
       value: 
-      objectReference: {fileID: 2100000, guid: 812848c58430c301cabbdd6c1803f108, type: 2}
+      objectReference: {fileID: 10303, guid: 0000000000000000f000000000000000, type: 0}
     - target: {fileID: 6759095419728963412, guid: 8894fa7e4588a5c4fab98453e558847d,
         type: 3}
       propertyPath: DynamicMaterials.Array.data[5]
       value: 
-      objectReference: {fileID: 2100000, guid: 365e29c714ad1d904934550a5c6eb806, type: 2}
+      objectReference: {fileID: 2100000, guid: 812848c58430c301cabbdd6c1803f108, type: 2}
     - target: {fileID: 6759095419728963412, guid: 8894fa7e4588a5c4fab98453e558847d,
         type: 3}
       propertyPath: DynamicMaterials.Array.data[6]
@@ -30344,7 +30378,12 @@ PrefabInstance:
         type: 3}
       propertyPath: NetworkIDs.Array.data[37].gameObject
       value: 
-      objectReference: {fileID: 0}
+      objectReference: {fileID: 667499938}
+    - target: {fileID: 6759095419728963412, guid: 8894fa7e4588a5c4fab98453e558847d,
+        type: 3}
+      propertyPath: NetworkIDs.Array.data[38].gameObject
+      value: 
+      objectReference: {fileID: 809580468}
     - target: {fileID: 8464459589408506562, guid: 8894fa7e4588a5c4fab98453e558847d,
         type: 3}
       propertyPath: serializedProgramAsset

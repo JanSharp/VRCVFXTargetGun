@@ -81,6 +81,7 @@ namespace JanSharp
         [SerializeField] private VRC_Pickup pickup;
         public VRC_Pickup Pickup => pickup;
         [SerializeField] private Transform aimPoint;
+        public Transform AimPoint => aimPoint;
         [SerializeField] private Transform placeIndicator;
         [SerializeField] private GameObject placeIndicatorForwardsArrow;
         [SerializeField] private Transform deleteIndicator;
@@ -107,6 +108,8 @@ namespace JanSharp
         [SerializeField] private TextMeshProUGUI confirmationTitle;
         [SerializeField] private TextMeshProUGUI confirmationDescription;
         [SerializeField] public ToggleGroup effectsToggleGroup;
+        [SerializeField] private TransformGizmo transformGizmo;
+        [SerializeField] private VFXTransformGizmoBridge transformGizmoBridge;
 
         // set OnBuild
         [HideInInspector] public MeshRenderer[] gunMeshRenderers;
@@ -128,12 +131,13 @@ namespace JanSharp
                 IsPlaceIndicatorActive = false;
                 IsDeleteIndicatorActive = false;
                 IsHighlightActive = false;
+                ActivelyEditedEffectDescriptor = null;
                 mode = value;
                 var color = GetModeColor(mode);
                 foreach (var renderer in gunMeshRenderers)
                     foreach (var mat in renderer.materials)
                         mat.color = color;
-                placeDeleteModeToggle.InteractionText = IsPlaceMode ? "Switch to Delete" : "Switch to Place";
+                placeDeleteModeToggle.InteractionText = IsDeleteMode ? "Switch to Place" : "Switch to Delete";
                 UpdateUseText();
                 if (IsHeld)
                     if (!IsUserInVR || !IsPlaceMode) // NOTE: what should EditMode do in this case?
@@ -310,6 +314,7 @@ namespace JanSharp
                 foreach (Collider collider in pickup.GetComponents<Collider>())
                     collider.enabled = !value;
                 #endif
+                IsEditTransformGizmoPaused = !value;
                 if (value)
                 {
                     if (!IsUserInVR)
@@ -481,6 +486,51 @@ namespace JanSharp
                     selectedPlacePreview.gameObject.SetActive(false);
             }
         }
+
+        private EffectDescriptor activelyEditedEffectDescriptor;
+        private EffectDescriptor ActivelyEditedEffectDescriptor
+        {
+            get => activelyEditedEffectDescriptor;
+            set
+            {
+                if (activelyEditedEffectDescriptor == value)
+                    return;
+                activelyEditedEffectDescriptor = value;
+                UpdateActivelyEditedObj();
+            }
+        }
+        private int activelyEditedIndex;
+        private int ActivelyEditedIndex
+        {
+            get => activelyEditedIndex;
+            set
+            {
+                if (activelyEditedIndex == value)
+                    return;
+                activelyEditedIndex = value;
+                UpdateActivelyEditedObj();
+            }
+        }
+        private bool isEditTransformGizmoPaused = true;
+        private bool IsEditTransformGizmoPaused
+        {
+            get => isEditTransformGizmoPaused;
+            set
+            {
+                if (isEditTransformGizmoPaused == value)
+                    return;
+                isEditTransformGizmoPaused = value;
+                UpdateActivelyEditedObj();
+            }
+        }
+        private bool ShouldActivelyEditedObjBeActive() => ActivelyEditedEffectDescriptor != null && activelyEditedIndex != -1 && !isEditTransformGizmoPaused;
+        private void UpdateActivelyEditedObj()
+        {
+            transformGizmo.SetTracked(TrackedByTransformGizmo, transformGizmoBridge);
+        }
+        public Transform TrackedByTransformGizmo => ShouldActivelyEditedObjBeActive()
+            ? ActivelyEditedEffectDescriptor.EffectParents[activelyEditedIndex]
+            : null;
 
         private EffectDescriptor highlightTargetEffectDescriptor;
         private EffectDescriptor HighlightTargetEffectDescriptor
@@ -768,6 +818,29 @@ namespace JanSharp
                     IsDeleteIndicatorActive = false;
                 }
             }
+            else if (IsEditMode)
+            {
+                if (ShouldActivelyEditedObjBeActive())
+                {
+                    TransformGizmoState initialState = transformGizmo.State;
+                    transformGizmo.Activate();
+                    if (transformGizmo.State == initialState) // Didn't change state, didn't click on the gizmo
+                        ActivelyEditedEffectDescriptor = null; // therefore clear/reset.
+                }
+                else
+                {
+                    ActivelyEditedEffectDescriptor = HighlightTargetEffectDescriptor;
+                    ActivelyEditedIndex = HighlightTargetIndex;
+                    IsHighlightActive = false;
+                }
+            }
+        }
+
+        public void ReceivedOnPickupUseUp()
+        {
+            if (!IsEditMode || !ShouldActivelyEditedObjBeActive())
+                return;
+            transformGizmo.Deactivate();
         }
 
         public void UpdateColors()
@@ -959,13 +1032,17 @@ namespace JanSharp
                 {
                     if (!initialized)
                         Init();
-                    if (IsPlaceMode)
-                        Mode = DeleteMode;
-                    else
-                        Mode = PlaceMode;
+                    Mode = IsDeleteMode ? PlaceMode : DeleteMode;
                 }
                 // if (Input.GetKeyDown(KeyCode.R)) // can't use R
                 //     SwitchToEditMode();
+
+                if (Input.GetKeyDown(KeyCode.T))
+                {
+                    if (!initialized)
+                        Init();
+                    Mode = IsEditMode ? PlaceMode : EditMode;
+                }
 
                 // effect selection
                 if (Input.GetKeyDown(KeyCode.Q))
@@ -1069,6 +1146,24 @@ namespace JanSharp
                     secondLaser.localScale = new Vector3(1f, 1f, (aimPoint.position - position).magnitude * laserBaseScale);
                     secondLaser.LookAt(position);
                     IsDeleteIndicatorActive = true;
+                }
+                else if (IsEditMode)
+                {
+                    if (!ShouldActivelyEditedObjBeActive())
+                    {
+                        if (!TryGetTargetedEffect(hit))
+                        {
+                            IsHighlightActive = false;
+                            return;
+                        }
+                        HighlightTargetEffectDescriptor = outTargetedEffectDescriptor; // has to be set before setting HighlightTargetIndex
+                        HighlightTargetIndex = outTargetedEffectIndex;
+                        Transform effectParent = HighlightTargetEffectDescriptor.EffectParents[HighlightTargetIndex];
+                        Vector3 position = effectParent.position + effectParent.TransformDirection(HighlightTargetEffectDescriptor.effectLocalCenter);
+                        highlightLaser.localScale = new Vector3(1f, 1f, (aimPoint.position - position).magnitude * laserBaseScale);
+                        highlightLaser.LookAt(position);
+                        IsHighlightActive = true;
+                    }
                 }
             }
             else
