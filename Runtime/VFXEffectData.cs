@@ -18,8 +18,8 @@ namespace JanSharp
         public const int OwningPlayerData = 2;
         ///<summary>uint</summary>
         public const int CreatedTick = 3;
-        ///<summary>EffectDescriptor</summary>
-        public const int Descriptor = 4;
+        ///<summary>VFXInstance</summary>
+        public const int VfxInst = 4;
         ///<summary>Vector3</summary>
         public const int Position = 5;
         ///<summary>Quaternion</summary>
@@ -35,7 +35,7 @@ namespace JanSharp
             int owningPlayerId = default,
             object[] owningPlayerData = default,
             uint createdTick = default,
-            EffectDescriptor descriptor = default,
+            VFXInstance vfxInst = default,
             Vector3 position = default,
             Quaternion rotation = default,
             ulong uniqueId = default,
@@ -46,7 +46,7 @@ namespace JanSharp
             vFXEffectData[OwningPlayerId] = owningPlayerId;
             vFXEffectData[OwningPlayerData] = owningPlayerData;
             vFXEffectData[CreatedTick] = createdTick;
-            vFXEffectData[Descriptor] = descriptor;
+            vFXEffectData[VfxInst] = vfxInst;
             vFXEffectData[Position] = position;
             vFXEffectData[Rotation] = rotation;
             vFXEffectData[UniqueId] = uniqueId;
@@ -70,10 +70,10 @@ namespace JanSharp
             => (uint)vFXEffectData[CreatedTick];
         public static void SetCreatedTick(object[] vFXEffectData, uint createdTick)
             => vFXEffectData[CreatedTick] = createdTick;
-        public static EffectDescriptor GetDescriptor(object[] vFXEffectData)
-            => (EffectDescriptor)vFXEffectData[Descriptor];
-        public static void SetDescriptor(object[] vFXEffectData, EffectDescriptor descriptor)
-            => vFXEffectData[Descriptor] = descriptor;
+        public static VFXInstance GetVfxInst(object[] vFXEffectData)
+            => (VFXInstance)vFXEffectData[VfxInst];
+        public static void SetVfxInst(object[] vFXEffectData, VFXInstance vfxInst)
+            => vFXEffectData[VfxInst] = vfxInst;
         public static Vector3 GetPosition(object[] vFXEffectData)
             => (Vector3)vFXEffectData[Position];
         public static void SetPosition(object[] vFXEffectData, Vector3 position)

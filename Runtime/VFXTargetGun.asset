@@ -3316,19 +3316,19 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: descriptors
+      Data: insts
     - Name: $v
       Entry: 7
       Data: 197|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: descriptors
+      Data: insts
     - Name: <UserType>k__BackingField
       Entry: 7
       Data: 198|System.RuntimeType, mscorlib
     - Name: 
       Entry: 1
-      Data: JanSharp.EffectDescriptor[], JanSharp.VFXTargetGun
+      Data: JanSharp.VFXInstance[], JanSharp.VFXTargetGun
     - Name: 
       Entry: 8
       Data: 
@@ -3793,7 +3793,7 @@ MonoBehaviour:
       Data: 220|System.RuntimeType, mscorlib
     - Name: 
       Entry: 1
-      Data: JanSharp.EffectDescriptor, JanSharp.VFXTargetGun
+      Data: JanSharp.VFXInstance, JanSharp.VFXTargetGun
     - Name: 
       Entry: 8
       Data: 
@@ -3885,13 +3885,13 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: deleteTargetEffectDescriptor
+      Data: deleteTargetVFXInstance
     - Name: $v
       Entry: 7
       Data: 224|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: deleteTargetEffectDescriptor
+      Data: deleteTargetVFXInstance
     - Name: <UserType>k__BackingField
       Entry: 9
       Data: 220
@@ -4277,13 +4277,13 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: activelyEditedEffectDescriptor
+      Data: activelyEditedVFXInstance
     - Name: $v
       Entry: 7
       Data: 240|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: activelyEditedEffectDescriptor
+      Data: activelyEditedVFXInstance
     - Name: <UserType>k__BackingField
       Entry: 9
       Data: 220
@@ -4424,13 +4424,13 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: highlightTargetEffectDescriptor
+      Data: highlightTargetVFXInstance
     - Name: $v
       Entry: 7
       Data: 246|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: highlightTargetEffectDescriptor
+      Data: highlightTargetVFXInstance
     - Name: <UserType>k__BackingField
       Entry: 9
       Data: 220
@@ -5177,13 +5177,13 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: outTargetedEffectDescriptor
+      Data: outTargetedVFXInstance
     - Name: $v
       Entry: 7
       Data: 279|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
     - Name: <Name>k__BackingField
       Entry: 1
-      Data: outTargetedEffectDescriptor
+      Data: outTargetedVFXInstance
     - Name: <UserType>k__BackingField
       Entry: 9
       Data: 220

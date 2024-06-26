@@ -7029,7 +7029,7 @@ MonoBehaviour:
   transformGizmoBridge: {fileID: 7671096754304149023}
   gunMeshRenderers: []
   laserBaseScale: 0
-  descriptors: []
+  insts: []
   playEffectIAId: 0
   stopEffectIAId: 0
   stopAllEffectsIAId: 0

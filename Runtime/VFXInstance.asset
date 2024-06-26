@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c333ccfdd0cbdbc4ca30cef2dd6e6b9b, type: 3}
-  m_Name: EffectDescriptor
+  m_Name: VFXInstance
   m_EditorClassIdentifier: 
   serializedUdonProgramAsset: {fileID: 11400000, guid: a5f1ade7301442eb9940750804086bb0,
     type: 2}
@@ -21,7 +21,7 @@ MonoBehaviour:
   compiledVersion: 2
   behaviourSyncMode: 4
   hasInteractEvent: 0
-  scriptID: 4166266818149050038
+  scriptID: -7469652808531332880
   serializationData:
     SerializedFormat: 2
     SerializedBytes: 
@@ -1939,7 +1939,7 @@ MonoBehaviour:
       Data: 115|System.RuntimeType, mscorlib
     - Name: 
       Entry: 1
-      Data: JanSharp.EffectButtonData, JanSharp.VFXTargetGun
+      Data: JanSharp.VFXButtonData, JanSharp.VFXTargetGun
     - Name: 
       Entry: 8
       Data: 

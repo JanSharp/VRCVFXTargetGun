@@ -7,7 +7,7 @@ using VRC.Udon.Common;
 namespace JanSharp
 {
     [UdonBehaviourSyncMode(BehaviourSyncMode.Manual)]
-    public class EffectDescriptor : UdonSharpBehaviour
+    public class VFXInstance : UdonSharpBehaviour
     {
         [HideInInspector] public string effectName;
         public string EffectName => effectName;
@@ -212,7 +212,7 @@ namespace JanSharp
         }
 
         // these 3 are only set for people who have opened the UI at some point
-        private EffectButtonData buttonData;
+        private VFXButtonData buttonData;
 
         private void UpdateButtonAppearance()
         {
@@ -286,8 +286,8 @@ namespace JanSharp
             button.SetActive(true);
             button.transform.SetParent(gun.ButtonGrid, false);
             button.SetActive(true);
-            buttonData = (EffectButtonData)button.GetComponent(typeof(UdonBehaviour));
-            buttonData.descriptor = this;
+            buttonData = (VFXButtonData)button.GetComponent(typeof(UdonBehaviour));
+            buttonData.inst = this;
             buttonData.effectNameText.text = "<line-height=80%>" + effectName;
             UpdateButtonAppearance();
             UpdateStopLocalEffectsText();
@@ -464,7 +464,7 @@ namespace JanSharp
                     if (pss[i] != null)
                         pss[i].Play(); // FIXME: this can somehow be a null reference exception where `pss[i]` is null. Idk how so for now it's just logging to gather information
                     else
-                        Debug.LogWarning($"<dlt> <{nameof(EffectDescriptor)}> EffectName: '{EffectName}', Gun: '{gun.name}':"
+                        Debug.LogWarning($"<dlt> <{nameof(VFXInstance)}> EffectName: '{EffectName}', Gun: '{gun.name}':"
                             + $" Did not play particle system at (effect index: {index}, particle system index: {i}) because it was null.", this);
                 if (IsOnce)
                 {

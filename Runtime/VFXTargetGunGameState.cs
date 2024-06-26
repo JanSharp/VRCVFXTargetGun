@@ -45,7 +45,7 @@ namespace JanSharp
         private void StopNextQueuedEffect()
         {
             object[] effectData = effectsToStop[--effectsToStopCount];
-            VFXEffectData.GetDescriptor(effectData).StopToggleEffect(VFXEffectData.GetEffectIndex(effectData));
+            VFXEffectData.GetVfxInst(effectData).StopToggleEffect(VFXEffectData.GetEffectIndex(effectData));
         }
 
         private void PlayNextQueuedEffect()
@@ -53,7 +53,7 @@ namespace JanSharp
             object[] effectData = effectsToPlay[--effectsToPlayCount];
             if (VFXEffectData.GetEffectId(effectData) == 0u) // Already marked as stopped.
                 return;
-            int effectIndex = VFXEffectData.GetDescriptor(effectData).PlayEffect(
+            int effectIndex = VFXEffectData.GetVfxInst(effectData).PlayEffect(
                 effectId: VFXEffectData.GetEffectId(effectData),
                 position: VFXEffectData.GetPosition(effectData),
                 rotation: VFXEffectData.GetRotation(effectData),
@@ -86,18 +86,18 @@ namespace JanSharp
             return redirectedPlayerIds[playerId].Int;
         }
 
-        private void SendPlayEffectIA(EffectDescriptor descriptor, Vector3 position, Quaternion rotation)
+        private void SendPlayEffectIA(VFXInstance inst, Vector3 position, Quaternion rotation)
         {
-            lockstep.WriteSmallUInt((uint)descriptor.Index);
+            lockstep.WriteSmallUInt((uint)inst.Index);
             lockstep.WriteVector3(position);
             lockstep.WriteQuaternion(rotation);
             ulong uniqueId = lockstep.SendInputAction(playEffectIAId);
             if (uniqueId == 0uL)
                 return;
 
-            if (descriptor.IsOnce)
+            if (inst.IsOnce)
             {
-                descriptor.PlayEffect(
+                inst.PlayEffect(
                     effectId: 0u,
                     position: position,
                     rotation: rotation,
@@ -111,11 +111,11 @@ namespace JanSharp
                 owningPlayerId: redirectedLocalPlayerId,
                 owningPlayerData: (object[])playerDataById[redirectedLocalPlayerId].Reference,
                 createdTick: 0u, // Unknown.
-                descriptor: descriptor,
+                vfxInst: inst,
                 position: position,
                 rotation: rotation,
                 uniqueId: uniqueId,
-                effectIndex: descriptor.PlayEffect(
+                effectIndex: inst.PlayEffect(
                     effectId: 0u, // Unknown.
                     position: position,
                     rotation: rotation,
@@ -131,12 +131,12 @@ namespace JanSharp
         {
             if (!initialized)
                 Init();
-            EffectDescriptor descriptor = descriptors[lockstep.ReadSmallUInt()];
-            if (descriptor.IsOnce)
+            VFXInstance inst = insts[lockstep.ReadSmallUInt()];
+            if (inst.IsOnce)
             {
                 if (lockstep.SendingPlayerId == localPlayerId)
                     return;
-                descriptor.PlayEffect(
+                inst.PlayEffect(
                     effectId: 0u,
                     position: lockstep.ReadVector3(),
                     rotation: lockstep.ReadQuaternion(),
@@ -166,8 +166,8 @@ namespace JanSharp
                     SendStopEffectIA(effectId);
                     return;
                 }
-                descriptor.ActiveEffectIds[effectIndex] = effectId;
-                descriptor.ActiveUniqueIds[effectIndex] = 0uL;
+                inst.ActiveEffectIds[effectIndex] = effectId;
+                inst.ActiveUniqueIds[effectIndex] = 0uL;
                 return;
             }
 
@@ -176,7 +176,7 @@ namespace JanSharp
                 owningPlayerId: owningPlayerId,
                 owningPlayerData: owningPlayerData,
                 createdTick: lockstep.CurrentTick,
-                descriptor: descriptor,
+                vfxInst: inst,
                 position: lockstep.ReadVector3(),
                 rotation: lockstep.ReadQuaternion());
             effectsById.Add(effectId, new DataToken(effectData));
@@ -196,7 +196,7 @@ namespace JanSharp
             int effectIndex = VFXEffectData.GetEffectIndex(effectData);
             if (effectIndex == -1)
                 return;
-            VFXEffectData.GetDescriptor(effectData).StopToggleEffect(effectIndex);
+            VFXEffectData.GetVfxInst(effectData).StopToggleEffect(effectIndex);
             VFXEffectData.SetEffectIndex(effectData, -1);
         }
 
@@ -241,7 +241,7 @@ namespace JanSharp
             int effectIndex = VFXEffectData.GetEffectIndex(effectData);
             if (effectIndex == -1) // It could be stopped multiple times even in latency state.
                 return;
-            VFXEffectData.GetDescriptor(effectData).StopToggleEffect(effectIndex);
+            VFXEffectData.GetVfxInst(effectData).StopToggleEffect(effectIndex);
             // Mark it as already stopped. The PlayEffectIA is going to handle cleaning up of this data.
             VFXEffectData.SetEffectIndex(effectData, -1);
         }
@@ -337,25 +337,25 @@ namespace JanSharp
             RemovePlayerDataWithoutClones(playerData);
         }
 
-        private void  StopAllEffectsForOneDescriptorInLatencyState(EffectDescriptor descriptor)
+        private void  StopAllEffectsForOneDescriptorInLatencyState(VFXInstance inst)
         {
             DataList effectsList = effectsByUniqueId.GetValues();
             int count = effectsList.Count;
             for (int i = 0; i < count; i++)
             {
                 object[] effectData = (object[])effectsList[i].Reference;
-                if (VFXEffectData.GetDescriptor(effectData) == descriptor)
+                if (VFXEffectData.GetVfxInst(effectData) == inst)
                     StopEffectInLatencyState(effectData);
             }
         }
 
-        public void SendStopAllEffectsForOneDescriptorIA(EffectDescriptor descriptor)
+        public void SendStopAllEffectsForOneDescriptorIA(VFXInstance inst)
         {
-            lockstep.WriteSmallUInt((uint)descriptor.Index);
+            lockstep.WriteSmallUInt((uint)inst.Index);
             lockstep.SendInputAction(stopAllEffectsForOneDescriptorIAId);
 
             // Handle latency state.
-            StopAllEffectsForOneDescriptorInLatencyState(descriptor);
+            StopAllEffectsForOneDescriptorInLatencyState(inst);
         }
 
         [SerializeField] [HideInInspector] private uint stopAllEffectsForOneDescriptorIAId;
@@ -365,13 +365,13 @@ namespace JanSharp
             if (!initialized)
                 Init();
             int descriptorIndex = (int)lockstep.ReadSmallUInt();
-            EffectDescriptor descriptor = descriptors[descriptorIndex];
+            VFXInstance descriptor = insts[descriptorIndex];
             DataList effectsList = effectsById.GetValues();
             int count = effectsList.Count;
             for (int i = 0; i < count; i++)
             {
                 object[] effectData = (object[])effectsList[i].Reference;
-                if (VFXEffectData.GetDescriptor(effectData) == descriptor)
+                if (VFXEffectData.GetVfxInst(effectData) == descriptor)
                 {
                     object[] playerData = VFXEffectData.GetOwningPlayerData(effectData);
                     VFXPlayerData.SetOwnedEffectCount(playerData, VFXPlayerData.GetOwnedEffectCount(playerData) - 1u);
@@ -381,12 +381,12 @@ namespace JanSharp
             }
         }
 
-        public void StopAllEffectsForOneDescriptorOwnedByLocalPlayer(EffectDescriptor descriptor)
+        public void StopAllEffectsForOneDescriptorOwnedByLocalPlayer(VFXInstance descriptor)
         {
             SendStopAllEffectsForOneDescriptorOwnedByIA(descriptor, redirectedLocalPlayerId);
         }
 
-        private void SendStopAllEffectsForOneDescriptorOwnedByIA(EffectDescriptor descriptor, int owningPlayerId)
+        private void SendStopAllEffectsForOneDescriptorOwnedByIA(VFXInstance descriptor, int owningPlayerId)
         {
             lockstep.WriteSmallUInt((uint)descriptor.Index);
             lockstep.WriteSmallInt(owningPlayerId);
@@ -406,14 +406,14 @@ namespace JanSharp
                 Init();
             int descriptorIndex = (int)lockstep.ReadSmallUInt();
             int owningPlayerId = lockstep.ReadSmallInt();
-            EffectDescriptor descriptor = descriptors[descriptorIndex];
+            VFXInstance descriptor = insts[descriptorIndex];
             DataList effectsList = effectsById.GetValues();
             int count = effectsList.Count;
             uint stoppedCount = 0;
             for (int i = 0; i < count; i++)
             {
                 object[] effectData = (object[])effectsList[i].Reference;
-                if (VFXEffectData.GetDescriptor(effectData) == descriptor
+                if (VFXEffectData.GetVfxInst(effectData) == descriptor
                     && VFXEffectData.GetOwningPlayerId(effectData) == owningPlayerId)
                 {
                     stoppedCount++;
@@ -478,8 +478,8 @@ namespace JanSharp
 
             if (isExport)
             {
-                lockstep.WriteSmallUInt((uint)descriptors.Length);
-                foreach (EffectDescriptor descriptor in descriptors)
+                lockstep.WriteSmallUInt((uint)insts.Length);
+                foreach (VFXInstance descriptor in insts)
                     lockstep.WriteString((descriptor.IsToggle && descriptor.ActiveCount != 0) ? descriptor.uniqueName : null);
             }
 
@@ -529,7 +529,7 @@ namespace JanSharp
                     lockstep.WriteSmallUInt(VFXEffectData.GetEffectId(effectData));
                 lockstep.WriteSmallInt(VFXEffectData.GetOwningPlayerId(effectData));
                 lockstep.WriteSmallUInt(VFXEffectData.GetCreatedTick(effectData));
-                lockstep.WriteSmallUInt((uint)VFXEffectData.GetDescriptor(effectData).Index);
+                lockstep.WriteSmallUInt((uint)VFXEffectData.GetVfxInst(effectData).Index);
                 lockstep.WriteVector3(VFXEffectData.GetPosition(effectData));
                 lockstep.WriteQuaternion(VFXEffectData.GetRotation(effectData));
             }
@@ -548,7 +548,7 @@ namespace JanSharp
                 StopAllEffectsInGameState();
 
                 DataDictionary knownEffectNameLut = new DataDictionary();
-                foreach (EffectDescriptor descriptor in descriptors)
+                foreach (VFXInstance descriptor in insts)
                     knownEffectNameLut.Add(descriptor.uniqueName, descriptor.Index);
                 int descriptorCount = (int)lockstep.ReadSmallUInt();
                 for (int i = 0; i < descriptorCount; i++)
@@ -648,7 +648,7 @@ namespace JanSharp
                     owningPlayerId: owningPlayerId,
                     owningPlayerData: owningPlayerData,
                     createdTick: createdTick,
-                    descriptor: descriptors[descriptorIndex],
+                    vfxInst: insts[descriptorIndex],
                     position: lockstep.ReadVector3(),
                     rotation: lockstep.ReadQuaternion());
                 effectsById.Add(effectId, new DataToken(effectData));

@@ -19,7 +19,7 @@ namespace JanSharp
         {
             if (vfxTargetGun.effectsParent == null)
             {
-                Debug.LogError($"[VFXTargetGun] Please create a game object with {nameof(EffectDescriptor)}s "
+                Debug.LogError($"[VFXTargetGun] Please create a game object with {nameof(VFXInstance)}s "
                     + $"as children and drag it to the 'Effects Parent' of the {nameof(VFXTargetGun)}.", vfxTargetGun);
                 return false;
             }
@@ -37,34 +37,34 @@ namespace JanSharp
             );
 
             Transform effectsParent = vfxTargetGun.effectsParent;
-            SerializedProperty descriptorsProperty = vfxTargetGunProxy.FindProperty(nameof(VFXTargetGun.descriptors));
-            descriptorsProperty.arraySize = effectsParent.childCount;
+            SerializedProperty instsProperty = vfxTargetGunProxy.FindProperty(nameof(VFXTargetGun.insts));
+            instsProperty.arraySize = effectsParent.childCount;
             bool result = true;
-            EffectDescriptor[] descriptors = new EffectDescriptor[effectsParent.childCount];
+            VFXInstance[] insts = new VFXInstance[effectsParent.childCount];
             for (int i = 0; i < effectsParent.childCount; i++)
             {
-                var descriptor = effectsParent.GetChild(i).GetComponent<EffectDescriptor>();
-                descriptors[i] = descriptor;
-                descriptorsProperty.GetArrayElementAtIndex(i).objectReferenceValue = descriptor;
-                if (descriptor == null)
+                var inst = effectsParent.GetChild(i).GetComponent<VFXInstance>();
+                insts[i] = inst;
+                instsProperty.GetArrayElementAtIndex(i).objectReferenceValue = inst;
+                if (inst == null)
                 {
-                    Debug.LogError($"[VFXTargetGun] The child #{i + 1} ({descriptor.name}) of the effects "
-                        + $"descriptor parent does not have an {nameof(EffectDescriptor)}.", descriptor);
+                    Debug.LogError($"[VFXTargetGun] The child #{i + 1} ({inst.name}) of the vfx instance "
+                        + $"parent does not have an {nameof(VFXInstance)}.", inst);
                     result = false;
                 }
                 else
-                    EffectDescriptorOnBuild.InitAtBuildTime(descriptor, vfxTargetGun, i);
+                    VFXInstanceOnBuild.InitAtBuildTime(inst, vfxTargetGun, i);
             }
             vfxTargetGunProxy.FindProperty(nameof(VFXTargetGun.laserBaseScale)).floatValue = vfxTargetGun.laser.localScale.z;
-            var issue = descriptors
+            var issue = insts
                 .Where(d => d != null)
                 .GroupBy(d => d.uniqueName)
                 .Where(g => g.Count() != 1)
                 .SelectMany(g => g)
                 .ToList();
-            foreach (EffectDescriptor descriptor in issue)
-                Debug.LogError($"[VFXTargetGun] The Unique Name '{descriptor.uniqueName}' cannot be used more "
-                    + $"than once.", descriptor);
+            foreach (VFXInstance inst in issue)
+                Debug.LogError($"[VFXTargetGun] The Unique Name '{inst.uniqueName}' cannot be used more "
+                    + $"than once.", inst);
             if (issue.Any())
                 result = false;
 

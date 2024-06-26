@@ -8,7 +8,7 @@ using TMPro;
 namespace JanSharp
 {
     [UdonBehaviourSyncMode(BehaviourSyncMode.None)]
-    public class EffectButtonData : UdonSharpBehaviour
+    public class VFXButtonData : UdonSharpBehaviour
     {
         public Toggle toggle;
         public TextMeshProUGUI effectNameText;
@@ -17,16 +17,16 @@ namespace JanSharp
         public GameObject stopGlobalEffectsButton;
         public TextMeshProUGUI stopLocalEffectsText;
         public TextMeshProUGUI activeCountText;
-        [HideInInspector] public EffectDescriptor descriptor;
+        [HideInInspector] public VFXInstance inst;
 
         public void OnValueChanged()
         {
             if (toggle.isOn)
-                descriptor.SelectThisEffect();
+                inst.SelectThisEffect();
         }
 
-        public void OnStopLocalClick() => descriptor.gun.StopAllEffectsForOneDescriptorOwnedByLocalPlayer(descriptor);
+        public void OnStopLocalClick() => inst.gun.StopAllEffectsForOneDescriptorOwnedByLocalPlayer(inst);
 
-        public void OnStopGlobalClick() => descriptor.gun.SendStopAllEffectsForOneDescriptorIA(descriptor);
+        public void OnStopGlobalClick() => inst.gun.SendStopAllEffectsForOneDescriptorIA(inst);
     }
 }

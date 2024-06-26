@@ -15,7 +15,7 @@ return {
     {type = "int", name = "owningPlayerId"},
     {type = "object[]", name = "owningPlayerData"},
     {type = "uint", name = "createdTick"},
-    {type = "EffectDescriptor", name = "descriptor"},
+    {type = "VFXInstance", name = "vfxInst"},
     {type = "Vector3", name = "position"},
     {type = "Quaternion", name = "rotation"},
     {type = "ulong", name = "uniqueId"}, -- Not part of the game state.

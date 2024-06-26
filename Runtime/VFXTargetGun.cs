@@ -82,7 +82,7 @@ namespace JanSharp
         // set OnBuild
         [HideInInspector] public MeshRenderer[] gunMeshRenderers;
         [HideInInspector] public float laserBaseScale;
-        [HideInInspector] public EffectDescriptor[] descriptors;
+        [HideInInspector] public VFXInstance[] insts;
 
         private const int UnknownMode = 0;
         private const int PlaceMode = 1;
@@ -99,7 +99,7 @@ namespace JanSharp
                 IsPlaceIndicatorActive = false;
                 IsDeleteIndicatorActive = false;
                 IsHighlightActive = false;
-                ActivelyEditedEffectDescriptor = null;
+                ActivelyEditedVFXInstance = null;
                 mode = value;
                 var color = GetModeColor(mode);
                 foreach (var renderer in gunMeshRenderers)
@@ -224,8 +224,8 @@ namespace JanSharp
             }
         }
         private bool initialized;
-        private EffectDescriptor selectedEffect;
-        public EffectDescriptor SelectedEffect
+        private VFXInstance selectedEffect;
+        public VFXInstance SelectedEffect
         {
             get => selectedEffect;
             set
@@ -239,7 +239,7 @@ namespace JanSharp
                 selectedPlacePreview = null; // this however has to be here, after `IsPlacePreviewActive = false` but before `UpdateIsPlacePreviewActiveBasedOnToggle`
                 if (selectedEffect != null)
                     selectedEffect.Selected = false;
-                selectedEffect = value; // update `selectedEffect` before setting `Selected` to true on an effect descriptor
+                selectedEffect = value; // update `selectedEffect` before setting `Selected` to true on a vfx instance
                 UpdateIsPlacePreviewActiveBasedOnToggle();
                 if (value == null)
                 {
@@ -329,17 +329,17 @@ namespace JanSharp
             }
         }
 
-        private EffectDescriptor deleteTargetEffectDescriptor;
-        private EffectDescriptor DeleteTargetEffectDescriptor
+        private VFXInstance deleteTargetVFXInstance;
+        private VFXInstance DeleteTargetVFXInstance
         {
-            get => deleteTargetEffectDescriptor;
+            get => deleteTargetVFXInstance;
             set
             {
-                if (deleteTargetEffectDescriptor == value)
+                if (deleteTargetVFXInstance == value)
                     return;
                 DeleteTargetIndex = -1;
                 selectedDeletePreview = null;
-                deleteTargetEffectDescriptor = value;
+                deleteTargetVFXInstance = value;
                 UpdateIsDeletePreviewActiveBasedOnToggle();
             }
         }
@@ -351,8 +351,8 @@ namespace JanSharp
             {
                 if (deleteTargetIndex == value)
                     return;
-                if (deleteTargetEffectDescriptor != null && deleteTargetEffectDescriptor.IsObject && deleteTargetIndex != -1)
-                    deleteTargetEffectDescriptor.EffectParents[deleteTargetIndex].gameObject.SetActive(deleteTargetEffectDescriptor.ActiveEffects[deleteTargetIndex]);
+                if (deleteTargetVFXInstance != null && deleteTargetVFXInstance.IsObject && deleteTargetIndex != -1)
+                    deleteTargetVFXInstance.EffectParents[deleteTargetIndex].gameObject.SetActive(deleteTargetVFXInstance.ActiveEffects[deleteTargetIndex]);
                 deleteTargetIndex = value;
                 UpdateDeletePreview();
             }
@@ -386,7 +386,7 @@ namespace JanSharp
             }
         }
         public void UpdateIsDeletePreviewActiveBasedOnToggle()
-            => IsDeletePreviewActive = deletePreviewToggle.isOn && DeleteTargetEffectDescriptor != null && DeleteTargetEffectDescriptor.IsObject;
+            => IsDeletePreviewActive = deletePreviewToggle.isOn && DeleteTargetVFXInstance != null && DeleteTargetVFXInstance.IsObject;
         private Transform selectedDeletePreview;
         private bool ShouldDeletePreviewBeActive() => IsDeleteIndicatorActive && IsDeletePreviewActive && DeleteTargetIndex != -1;
         private void UpdateDeletePreview()
@@ -394,9 +394,9 @@ namespace JanSharp
             if (ShouldDeletePreviewBeActive())
             {
                 if (selectedDeletePreview == null)
-                    selectedDeletePreview = DeleteTargetEffectDescriptor.GetDeletePreview();
+                    selectedDeletePreview = DeleteTargetVFXInstance.GetDeletePreview();
                 selectedDeletePreview.gameObject.SetActive(true);
-                var effectParent = DeleteTargetEffectDescriptor.EffectParents[DeleteTargetIndex];
+                var effectParent = DeleteTargetVFXInstance.EffectParents[DeleteTargetIndex];
                 selectedDeletePreview.SetPositionAndRotation(effectParent.position, effectParent.rotation);
                 effectParent.gameObject.SetActive(false);
                 deleteIndicator.gameObject.SetActive(false);
@@ -406,7 +406,7 @@ namespace JanSharp
                 if (selectedDeletePreview != null)
                     selectedDeletePreview.gameObject.SetActive(false);
                 if (DeleteTargetIndex != -1)
-                    DeleteTargetEffectDescriptor.EffectParents[DeleteTargetIndex].gameObject.SetActive(true);
+                    DeleteTargetVFXInstance.EffectParents[DeleteTargetIndex].gameObject.SetActive(true);
                 deleteIndicator.gameObject.SetActive(IsDeleteIndicatorActive);
             }
         }
@@ -455,15 +455,15 @@ namespace JanSharp
             }
         }
 
-        private EffectDescriptor activelyEditedEffectDescriptor;
-        private EffectDescriptor ActivelyEditedEffectDescriptor
+        private VFXInstance activelyEditedVFXInstance;
+        private VFXInstance ActivelyEditedVFXInstance
         {
-            get => activelyEditedEffectDescriptor;
+            get => activelyEditedVFXInstance;
             set
             {
-                if (activelyEditedEffectDescriptor == value)
+                if (activelyEditedVFXInstance == value)
                     return;
-                activelyEditedEffectDescriptor = value;
+                activelyEditedVFXInstance = value;
                 UpdateActivelyEditedObj();
             }
         }
@@ -491,26 +491,26 @@ namespace JanSharp
                 UpdateActivelyEditedObj();
             }
         }
-        private bool ShouldActivelyEditedObjBeActive() => ActivelyEditedEffectDescriptor != null && activelyEditedIndex != -1 && !isEditTransformGizmoPaused;
+        private bool ShouldActivelyEditedObjBeActive() => ActivelyEditedVFXInstance != null && activelyEditedIndex != -1 && !isEditTransformGizmoPaused;
         private void UpdateActivelyEditedObj()
         {
             transformGizmo.SetTracked(TrackedByTransformGizmo, transformGizmoBridge);
         }
         public Transform TrackedByTransformGizmo => ShouldActivelyEditedObjBeActive()
-            ? ActivelyEditedEffectDescriptor.EffectParents[activelyEditedIndex]
+            ? ActivelyEditedVFXInstance.EffectParents[activelyEditedIndex]
             : null;
 
-        private EffectDescriptor highlightTargetEffectDescriptor;
-        private EffectDescriptor HighlightTargetEffectDescriptor
+        private VFXInstance highlightTargetVFXInstance;
+        private VFXInstance HighlightTargetVFXInstance
         {
-            get => highlightTargetEffectDescriptor;
+            get => highlightTargetVFXInstance;
             set
             {
-                if (highlightTargetEffectDescriptor == value)
+                if (highlightTargetVFXInstance == value)
                     return;
                 HighlightTargetIndex = -1;
                 selectedHighlightObj = null;
-                highlightTargetEffectDescriptor = value;
+                highlightTargetVFXInstance = value;
                 EvaluateIsHighlightActive();
             }
         }
@@ -542,7 +542,7 @@ namespace JanSharp
             }
         }
         public void EvaluateIsHighlightActive()
-            => IsHighlightActive = HighlightTargetEffectDescriptor != null && HighlightTargetEffectDescriptor.IsObject;
+            => IsHighlightActive = HighlightTargetVFXInstance != null && HighlightTargetVFXInstance.IsObject;
         private Transform selectedHighlightObj;
         private bool ShouldHighlightObjBeActive() => IsHighlightActive && HighlightTargetIndex != -1;
         private void UpdateHighlightObj()
@@ -550,9 +550,9 @@ namespace JanSharp
             if (ShouldHighlightObjBeActive())
             {
                 if (selectedHighlightObj == null)
-                    selectedHighlightObj = HighlightTargetEffectDescriptor.GetHighlightPreview();
+                    selectedHighlightObj = HighlightTargetVFXInstance.GetHighlightPreview();
                 selectedHighlightObj.gameObject.SetActive(true);
-                var effectParent = HighlightTargetEffectDescriptor.EffectParents[HighlightTargetIndex];
+                var effectParent = HighlightTargetVFXInstance.EffectParents[HighlightTargetIndex];
                 selectedHighlightObj.SetPositionAndRotation(effectParent.position, effectParent.rotation);
             }
             else
@@ -635,11 +635,11 @@ namespace JanSharp
             legendText.text = $"[<b><color=#{ToHex(activeColor, false):X6}>once</color>: <color=#{ToHex(activeColor, false):X6}>on</color>/<color=#{ToHex(inactiveColor, false):X6}>off</color></b>] "
                 + $"[<b><color=#{ToHex(activeLoopColor, false):X6}>loop</color>: <color=#{ToHex(activeLoopColor, false):X6}>on</color>/<color=#{ToHex(inactiveLoopColor, false):X6}>off</color></b>] "
                 + $"[<b><color=#{ToHex(activeObjectColor, false):X6}>object</color>: <color=#{ToHex(activeObjectColor, false):X6}>on</color>/<color=#{ToHex(inactiveObjectColor, false):X6}>off</color></b>]";
-            for (int i = 0; i < descriptors.Length; i++)
+            for (int i = 0; i < insts.Length; i++)
             {
-                var descriptor = descriptors[i];
-                if (descriptor != null)
-                    descriptor.Init();
+                var inst = insts[i];
+                if (inst != null)
+                    inst.Init();
             }
             placeDeleteModeToggle.gameObject.SetActive(true);
         }
@@ -778,9 +778,9 @@ namespace JanSharp
             {
                 if (IsDeleteIndicatorActive)
                 {
-                    ulong uniqueId = DeleteTargetEffectDescriptor.ActiveUniqueIds[DeleteTargetIndex];
+                    ulong uniqueId = DeleteTargetVFXInstance.ActiveUniqueIds[DeleteTargetIndex];
                     if (uniqueId == 0uL)
-                        SendStopEffectIA(DeleteTargetEffectDescriptor.ActiveEffectIds[DeleteTargetIndex]);
+                        SendStopEffectIA(DeleteTargetVFXInstance.ActiveEffectIds[DeleteTargetIndex]);
                     else // Only exists in latency state.
                         StopEffectInLatencyState(uniqueId);
                     IsDeleteIndicatorActive = false;
@@ -793,11 +793,11 @@ namespace JanSharp
                     TransformGizmoState initialState = transformGizmo.State;
                     transformGizmo.Activate();
                     if (transformGizmo.State == initialState) // Didn't change state, didn't click on the gizmo
-                        ActivelyEditedEffectDescriptor = null; // therefore clear/reset.
+                        ActivelyEditedVFXInstance = null; // therefore clear/reset.
                 }
                 else
                 {
-                    ActivelyEditedEffectDescriptor = HighlightTargetEffectDescriptor;
+                    ActivelyEditedVFXInstance = HighlightTargetVFXInstance;
                     ActivelyEditedIndex = HighlightTargetIndex;
                     IsHighlightActive = false;
                 }
@@ -876,7 +876,7 @@ namespace JanSharp
                 var clampedPositionFromCenter = buttonDistanceFromCenter < 0f ? buttonHeight / -2f : buttonHeight / 2f;
                 var positionDiff = buttonDistanceFromCenter - clampedPositionFromCenter;
 
-                var rows = (descriptors.Length + columnCount - 1) / columnCount;
+                var rows = (insts.Length + columnCount - 1) / columnCount;
                 Canvas.ForceUpdateCanvases();
                 scrollRect.content.anchoredPosition = Vector2.up * Mathf.Clamp(currentContentPosition + positionDiff, 0f, Mathf.Max(0f, ((float)(rows - 4)) * buttonHeight));
             }
@@ -891,7 +891,7 @@ namespace JanSharp
                 index += 20;
             if (!initialized)
                 Init();
-            SelectedEffect = index >= descriptors.Length ? null : descriptors[index];
+            SelectedEffect = index >= insts.Length ? null : insts[index];
             ScrollToSelectedEffect();
         }
 
@@ -900,23 +900,23 @@ namespace JanSharp
             if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
             {
                 if (SelectedEffect == null)
-                    SelectedEffect = descriptors[descriptors.Length - 1];
+                    SelectedEffect = insts[insts.Length - 1];
                 else
-                    SelectedEffect = descriptors[(SelectedEffect.Index - 1 + descriptors.Length) % descriptors.Length];
+                    SelectedEffect = insts[(SelectedEffect.Index - 1 + insts.Length) % insts.Length];
                 ScrollToSelectedEffect();
             }
             else
             {
                 if (SelectedEffect == null)
-                    SelectedEffect = descriptors[0];
+                    SelectedEffect = insts[0];
                 else
-                    SelectedEffect = descriptors[(SelectedEffect.Index + 1) % descriptors.Length];
+                    SelectedEffect = insts[(SelectedEffect.Index + 1) % insts.Length];
                 ScrollToSelectedEffect();
             }
         }
 
         // since we can't use out parameters
-        private EffectDescriptor outTargetedEffectDescriptor;
+        private VFXInstance outTargetedVFXInstance;
         private int outTargetedEffectIndex;
         private bool TryGetTargetedEffect(RaycastHit hit)
         {
@@ -925,20 +925,20 @@ namespace JanSharp
             // trying to get if it is one of their internal ones
             if (hit.transform != null && hit.transform.IsChildOf(effectsParent))
             {
-                Transform effectDescriptorTransform = hit.transform;
+                Transform vfxInstTransform = hit.transform;
                 Transform effectClonesParentTransform = null;
                 Transform clonedEffectParent = null;
                 while (true)
                 {
-                    var parent = effectDescriptorTransform.parent;
+                    var parent = vfxInstTransform.parent;
                     if (parent == effectsParent)
                         break;
                     clonedEffectParent = effectClonesParentTransform;
-                    effectClonesParentTransform = effectDescriptorTransform;
-                    effectDescriptorTransform = parent;
+                    effectClonesParentTransform = vfxInstTransform;
+                    vfxInstTransform = parent;
                 }
-                outTargetedEffectDescriptor = descriptors[effectDescriptorTransform.GetSiblingIndex()];
-                if (hit.transform.IsChildOf(outTargetedEffectDescriptor.effectClonesParent)) // don't count the previews
+                outTargetedVFXInstance = insts[vfxInstTransform.GetSiblingIndex()];
+                if (hit.transform.IsChildOf(outTargetedVFXInstance.effectClonesParent)) // don't count the previews
                 {
                     outTargetedEffectIndex = clonedEffectParent.GetSiblingIndex();
                     return true;
@@ -947,10 +947,10 @@ namespace JanSharp
 
             // in delete mode we might be pointing at the currently active delete preview.
             // checking for effect active state because the effect might have been deleted while the local player was previewing it
-            if (ShouldDeletePreviewBeActive() && DeleteTargetEffectDescriptor.ActiveEffects[DeleteTargetIndex]
+            if (ShouldDeletePreviewBeActive() && DeleteTargetVFXInstance.ActiveEffects[DeleteTargetIndex]
                 && hit.transform != null && selectedDeletePreview != null && hit.transform.IsChildOf(selectedDeletePreview))
             {
-                outTargetedEffectDescriptor = DeleteTargetEffectDescriptor;
+                outTargetedVFXInstance = DeleteTargetVFXInstance;
                 outTargetedEffectIndex = DeleteTargetIndex;
                 return true;
             }
@@ -959,7 +959,7 @@ namespace JanSharp
             if (SelectedEffect == null || !SelectedEffect.IsToggle || SelectedEffect.ActiveCount == 0)
                 return false;
 
-            outTargetedEffectDescriptor = SelectedEffect;
+            outTargetedVFXInstance = SelectedEffect;
             // NOTE: GetNearestActiveEffect is probably a performance concern, but it's still required for effects without colliders
             outTargetedEffectIndex = SelectedEffect.GetNearestActiveEffect(hit.point);
             return true;
@@ -1020,7 +1020,7 @@ namespace JanSharp
                     else if (Physics.Raycast(aimPoint.position, aimPoint.forward, out hit, maxDistance, targetRayLayerMask.value, QueryTriggerInteraction.Ignore)
                         && TryGetTargetedEffect(hit))
                     {
-                        SelectedEffect = outTargetedEffectDescriptor;
+                        SelectedEffect = outTargetedVFXInstance;
                     }
                 }
                 else if (Input.GetKeyDown(KeyCode.Tab))
@@ -1084,10 +1084,10 @@ namespace JanSharp
                             IsHighlightActive = false;
                             return;
                         }
-                        HighlightTargetEffectDescriptor = outTargetedEffectDescriptor; // has to be set before setting HighlightTargetIndex
+                        HighlightTargetVFXInstance = outTargetedVFXInstance; // has to be set before setting HighlightTargetIndex
                         HighlightTargetIndex = outTargetedEffectIndex;
-                        Transform effectParent = HighlightTargetEffectDescriptor.EffectParents[HighlightTargetIndex];
-                        Vector3 position = effectParent.position + effectParent.TransformDirection(HighlightTargetEffectDescriptor.effectLocalCenter);
+                        Transform effectParent = HighlightTargetVFXInstance.EffectParents[HighlightTargetIndex];
+                        Vector3 position = effectParent.position + effectParent.TransformDirection(HighlightTargetVFXInstance.effectLocalCenter);
                         highlightLaser.localScale = new Vector3(1f, 1f, (aimPoint.position - position).magnitude * laserBaseScale);
                         highlightLaser.LookAt(position);
                         IsHighlightActive = true;
@@ -1100,12 +1100,12 @@ namespace JanSharp
                         IsDeleteIndicatorActive = false;
                         return;
                     }
-                    DeleteTargetEffectDescriptor = outTargetedEffectDescriptor; // has to be set before setting DeleteTargetIndex
+                    DeleteTargetVFXInstance = outTargetedVFXInstance; // has to be set before setting DeleteTargetIndex
                     DeleteTargetIndex = outTargetedEffectIndex;
-                    Transform effectParent = DeleteTargetEffectDescriptor.EffectParents[DeleteTargetIndex];
-                    Vector3 position = effectParent.position + effectParent.TransformDirection(DeleteTargetEffectDescriptor.effectLocalCenter);
-                    if (DeleteTargetEffectDescriptor.doLimitDistance
-                        && (position - hit.point).magnitude > Mathf.Max(1f, DeleteTargetEffectDescriptor.effectScale.x * 0.65f))
+                    Transform effectParent = DeleteTargetVFXInstance.EffectParents[DeleteTargetIndex];
+                    Vector3 position = effectParent.position + effectParent.TransformDirection(DeleteTargetVFXInstance.effectLocalCenter);
+                    if (DeleteTargetVFXInstance.doLimitDistance
+                        && (position - hit.point).magnitude > Mathf.Max(1f, DeleteTargetVFXInstance.effectScale.x * 0.65f))
                     {
                         IsDeleteIndicatorActive = false;
                         return;
@@ -1124,10 +1124,10 @@ namespace JanSharp
                             IsHighlightActive = false;
                             return;
                         }
-                        HighlightTargetEffectDescriptor = outTargetedEffectDescriptor; // has to be set before setting HighlightTargetIndex
+                        HighlightTargetVFXInstance = outTargetedVFXInstance; // has to be set before setting HighlightTargetIndex
                         HighlightTargetIndex = outTargetedEffectIndex;
-                        Transform effectParent = HighlightTargetEffectDescriptor.EffectParents[HighlightTargetIndex];
-                        Vector3 position = effectParent.position + effectParent.TransformDirection(HighlightTargetEffectDescriptor.effectLocalCenter);
+                        Transform effectParent = HighlightTargetVFXInstance.EffectParents[HighlightTargetIndex];
+                        Vector3 position = effectParent.position + effectParent.TransformDirection(HighlightTargetVFXInstance.effectLocalCenter);
                         highlightLaser.localScale = new Vector3(1f, 1f, (aimPoint.position - position).magnitude * laserBaseScale);
                         highlightLaser.LookAt(position);
                         IsHighlightActive = true;

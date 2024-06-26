@@ -42,7 +42,7 @@ however in reality I'd say 100 to 200 active effects is a much more practical li
 
 This test came before the one above however there were very few changes affecting the amount of bytes being synced between the 2. I don't remember exactly if I changed anything in between them unfortunately but I'm fairly certain because I wouldn't setup the entire test setup just to test something I'm going to change anyway.
 
-raw values (total bytes synced by both EffectDescriptor and effect full sync (which is a different script between the 2 tests) since instance launch, which means it doesn't reset between joins):
+raw values (total bytes synced by both VFXInstance and effect full sync (which is a different script between the 2 tests) since instance launch, which means it doesn't reset between joins):
 
 `0.2.0` first join: 25224
 `0.2.0` second join: 49384
