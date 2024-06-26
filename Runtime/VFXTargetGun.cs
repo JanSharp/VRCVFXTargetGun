@@ -1017,7 +1017,7 @@ namespace JanSharp
                 {
                     if (SelectedEffect != null)
                         SelectedEffect = null;
-                    else if (Physics.Raycast(aimPoint.position, aimPoint.forward, out hit, maxDistance, targetRayLayerMask.value)
+                    else if (Physics.Raycast(aimPoint.position, aimPoint.forward, out hit, maxDistance, targetRayLayerMask.value, QueryTriggerInteraction.Ignore)
                         && TryGetTargetedEffect(hit))
                     {
                         SelectedEffect = outTargetedEffectDescriptor;
@@ -1059,7 +1059,7 @@ namespace JanSharp
                 return;
 
             int layerMask = IsPlaceMode && SelectedEffect != null ? placeRayLayerMask.value : targetRayLayerMask.value;
-            if (Physics.Raycast(aimPoint.position, aimPoint.forward, out hit, maxDistance, layerMask))
+            if (Physics.Raycast(aimPoint.position, aimPoint.forward, out hit, maxDistance, layerMask, QueryTriggerInteraction.Ignore))
             {
                 laser.localScale = new Vector3(1f, 1f, (aimPoint.position - hit.point).magnitude * laserBaseScale);
                 if (IsPlaceMode)
