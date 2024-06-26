@@ -7,7 +7,7 @@ using VRC.Udon.Common;
 namespace JanSharp
 {
     [UdonBehaviourSyncMode(BehaviourSyncMode.Manual)]
-    public class VFXInstance : UdonSharpBehaviour
+    public class VFXInstPool : UdonSharpBehaviour
     {
         [HideInInspector] public string effectName;
         public string EffectName => effectName;
@@ -287,7 +287,7 @@ namespace JanSharp
             button.transform.SetParent(gun.ButtonGrid, false);
             button.SetActive(true);
             buttonData = (VFXButtonData)button.GetComponent(typeof(UdonBehaviour));
-            buttonData.inst = this;
+            // buttonData.inst = this;
             buttonData.effectNameText.text = "<line-height=80%>" + effectName;
             UpdateButtonAppearance();
             UpdateStopLocalEffectsText();
@@ -299,7 +299,7 @@ namespace JanSharp
             var toggle = gun.KeepOpenToggle; // put it in a local var first because UdonSharp is being picky and weird
             if (!toggle.isOn)
                 gun.CloseUI();
-            gun.SelectedEffect = this;
+            // gun.SelectedEffect = this;
         }
 
         private void GrowArrays(int newLength)
