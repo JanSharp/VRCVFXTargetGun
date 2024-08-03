@@ -1,6 +1,12 @@
 
 # Changelog
 
+## [0.4.7] - 2024-08-03
+
+### Fixed
+
+- Fix effect name being hidden from inspector ([`33f02f7`](https://github.com/JanSharp/VRCVFXTargetGun/commit/33f02f701e8c37b1aa4b412666f470c192841bcb))
+
 ## [0.4.6] - 2023-10-12
 
 ### Changed
@@ -202,6 +208,7 @@ _Initial release._
 - Add basic UI ([`b99f245`](https://github.com/JanSharp/VRCVFXTargetGun/commit/b99f2458b5de112ad58a25d7d378e146fd7112fb))
 - Workaround for VRCInstantiate being weird ([`4e4840e`](https://github.com/JanSharp/VRCVFXTargetGun/commit/4e4840e50b88570484a528fd599ee78e6c26026c))
 
+[0.4.7]: https://github.com/JanSharp/VRCVFXTargetGun/releases/tag/v0.4.7
 [0.4.6]: https://github.com/JanSharp/VRCVFXTargetGun/releases/tag/v0.4.6
 [0.4.5]: https://github.com/JanSharp/VRCVFXTargetGun/releases/tag/v0.4.5
 [0.4.4]: https://github.com/JanSharp/VRCVFXTargetGun/releases/tag/v0.4.4
