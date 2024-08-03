@@ -9,7 +9,7 @@ namespace JanSharp
     [UdonBehaviourSyncMode(BehaviourSyncMode.Manual)]
     public class EffectDescriptor : UdonSharpBehaviour
     {
-        [HideInInspector] public string effectName;
+        public string effectName;
         public string EffectName => effectName;
         [Tooltip(
 @"The effect will always face away from/be parallel to the object it is placed on,
