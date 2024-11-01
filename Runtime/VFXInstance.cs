@@ -6,7 +6,7 @@ using VRC.Udon.Common;
 
 namespace JanSharp
 {
-    [UdonBehaviourSyncMode(BehaviourSyncMode.Manual)]
+    [UdonBehaviourSyncMode(BehaviourSyncMode.None)]
     public class VFXInstance : UdonSharpBehaviour
     {
         [HideInInspector] public string effectName;

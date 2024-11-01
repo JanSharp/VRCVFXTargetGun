@@ -15,7 +15,7 @@ namespace JanSharp
         public override bool GameStateSupportsImportExport => true;
         public override uint GameStateDataVersion => 0u;
         public override uint GameStateLowestSupportedDataVersion => 0u;
-        [HideInInspector] public LockstepAPI lockstep;
+        [HideInInspector] [SingletonReference] public LockstepAPI lockstep;
         private uint localPlayerId;
         private string localPlayerDisplayName;
         private int redirectedLocalPlayerId;
@@ -436,8 +436,7 @@ namespace JanSharp
             int joinedPlayerId = (int)lockstep.JoinedPlayerId;
             string displayName = lockstep.GetDisplayName((uint)joinedPlayerId);
             object[] playerData;
-            DataToken playerDataToken;
-            if (playerDataByName.TryGetValue(displayName, out playerDataToken))
+            if (playerDataByName.TryGetValue(displayName, out DataToken playerDataToken))
             {
                 playerData = (object[])playerDataToken.Reference;
                 VFXPlayerData.SetCloneCount(playerData, VFXPlayerData.GetCloneCount(playerData) + 1u);
