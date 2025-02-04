@@ -15,7 +15,9 @@ namespace JanSharp
         public override bool GameStateSupportsImportExport => true;
         public override uint GameStateDataVersion => 0u;
         public override uint GameStateLowestSupportedDataVersion => 0u;
-        [HideInInspector] [SingletonReference] public LockstepAPI lockstep;
+        public override LockstepGameStateOptionsUI ExportUI => null;
+        public override LockstepGameStateOptionsUI ImportUI => null;
+
         private uint localPlayerId;
         private string localPlayerDisplayName;
         private int redirectedLocalPlayerId;
@@ -470,7 +472,7 @@ namespace JanSharp
             playerDataByName.Remove(VFXPlayerData.GetDisplayName(playerData));
         }
 
-        public override void SerializeGameState(bool isExport)
+        public override void SerializeGameState(bool isExport, LockstepGameStateOptionsData exportOptions)
         {
             if (!initialized)
                 Init();
@@ -534,7 +536,7 @@ namespace JanSharp
             }
         }
 
-        public override string DeserializeGameState(bool isImport, uint importedDataVersion)
+        public override string DeserializeGameState(bool isImport, uint importedDataVersion, LockstepGameStateOptionsData importOptions)
         {
             if (!initialized)
                 Init();
