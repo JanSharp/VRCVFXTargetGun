@@ -1,11 +1,7 @@
-﻿using UdonSharp;
-using UnityEngine;
-using VRC.SDKBase;
-using VRC.Udon;
-using VRC.Udon.Common;
-using UnityEditor;
+﻿using System.Linq;
 using UdonSharpEditor;
-using System.Linq;
+using UnityEditor;
+using UnityEngine;
 
 namespace JanSharp
 {
@@ -24,7 +20,7 @@ namespace JanSharp
         public override void OnInspectorGUI()
         {
             VFXInstance target = this.target as VFXInstance;
-            if (UdonSharpGUI.DrawDefaultUdonSharpBehaviourHeader(target))
+            if (UdonSharpGUI.DrawDefaultUdonSharpBehaviourHeader(target)) // NOTE: Update this when implementing multi editing.
                 return;
             EditorGUILayout.Space();
             base.OnInspectorGUI(); // draws public/serializable fields
