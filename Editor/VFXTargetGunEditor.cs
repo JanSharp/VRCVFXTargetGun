@@ -1,19 +1,19 @@
-﻿using UdonSharp;
+﻿using System.Linq;
+using TMPro;
+using UdonSharp;
+using UdonSharpEditor;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
 using VRC.SDKBase;
 using VRC.Udon;
-using TMPro;
-using UnityEditor;
-using UdonSharpEditor;
-using System.Linq;
 
 namespace JanSharp
 {
-    [InitializeOnLoad]
     public static class VFXTargetGunOnBuild
     {
-        static VFXTargetGunOnBuild() => JanSharp.OnBuildUtil.RegisterType<VFXTargetGun>(OnBuild);
+        [OrderedInitializeOnLoad]
+        private static void OnAssemblyLoad() => JanSharp.OnBuildUtil.RegisterType<VFXTargetGun>(OnBuild);
 
         private static bool OnBuild(VFXTargetGun vfxTargetGun)
         {

@@ -80,7 +80,6 @@ namespace JanSharp
         }
     }
 
-    [InitializeOnLoad]
     public static class VFXInstanceOnBuild
     {
         public static void InitAtBuildTime(VFXInstance inst, VFXTargetGun gun, int index)
@@ -91,7 +90,8 @@ namespace JanSharp
             instProxy.ApplyModifiedProperties();
         }
 
-        static VFXInstanceOnBuild() => JanSharp.OnBuildUtil.RegisterType<VFXInstance>(OnBuild);
+        [OrderedInitializeOnLoad]
+        private static void OnAssemblyLoad() => JanSharp.OnBuildUtil.RegisterType<VFXInstance>(OnBuild);
 
         private static bool OnBuild(VFXInstance inst)
         {
