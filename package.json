@@ -12,7 +12,7 @@
   "license": "MIT",
   "vpmDependencies": {
     "com.vrchat.worlds": "^3.4.x",
-    "com.jansharp.common": ">=0.1.2",
+    "com.jansharp.common": ">=1.4.0",
     "com.jansharp.lockstep": ">=0.1.0",
     "com.jansharp.transform-gizmo": ">=0.1.0"
   },
