@@ -54,6 +54,13 @@ namespace JanSharp
             return false;
         }
 
+        public override bool DeactivateAndRevertThisFrame()
+        {
+            // if (!isInVR)
+            //     return Input.GetMouseButtonDown(1) || Input.GetKeyDown(KeyCode.Escape);
+            return false;
+        }
+
         public override bool SnappingThisFrame()
         {
             if (!isInVR)
